@@ -1,0 +1,11 @@
+# Har qanday kod o'zgarishini loyiha egasi (Owner / Lead) tekshirishi shart
+*       @owner
+
+# Backend o'zgarishlar
+/backend/       @backend-leads
+
+# Frontend o'zgarishlar
+/frontend/      @frontend-leads
+
+# IoT / Hardware / ANPR AI
+/ai-anpr/       @ai-leads
