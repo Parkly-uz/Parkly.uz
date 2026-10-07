@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="420" alt="PARKY.uz Logo" />
+</p>
+
 # 🚗 Parkly.uz — Smart Parking Management System
 
 > **Parkly.uz** — Shaharlar, savdo markazlari, biznes markazlar va xususiy avtoturargohlar uchun aqlli, to'liq avtomatlashtirilgan va xavfsiz Smart Parkovka ekotizimi.
