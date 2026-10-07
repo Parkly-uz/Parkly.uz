@@ -45,7 +45,8 @@ Parkly.uz haydovchilar uchun bo'sh joylarni real vaqt rejimida (real-time) topis
 | **Backend / Frontend / Mobile Devs** | **Write** | Funksional kod yozish, yangi feature branchlar, PR yaratish |
 | **QA / Tester** | **Triage / Read** | Bug reportlar ochish, release test qilish |
 
-> Batafsil ruxsatlar bo'yicha ko'rsatma: [ROLES_AND_PERMISSIONS.md](ROLES_AND_PERMISSIONS.md)
+> Batafsil ruxsatlar bo'yicha ko'rsatma: [ROLES_AND_PERMISSIONS.md](ROLES_AND_PERMISSIONS.md)  
+> Rasmiy loyiha boshqaruvi hujjatlari: [PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) | [PROJECT_MANAGEMENT_PLAN.md](docs/PROJECT_MANAGEMENT_PLAN.md)
 
 ---
 
