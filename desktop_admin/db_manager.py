@@ -109,6 +109,18 @@ class ParklyDatabase:
             )
             """)
 
+            # 7. Xabarnomalar (Notifications)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS system_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                type TEXT NOT NULL DEFAULT 'INFO', -- INFO, SUCCESS, WARNING, ALERT
+                is_read INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
             conn.commit()
 
             # Boshlang'ich ma'lumotlarni tekshirish va to'ldirish
@@ -215,6 +227,21 @@ class ParklyDatabase:
                 VALUES (?, ?, ?)
             """, settings)
 
+        # 5. Dastlabki Xabarnomalar (Notifications)
+        cursor.execute("SELECT COUNT(*) FROM system_notifications")
+        if cursor.fetchone()[0] == 0:
+            now = datetime.now()
+            notifs = [
+                ("Yangi avto kirdi", "01 A 777 AA (A-102 slotiga biriktirildi). ANPR: 99.4%", "INFO", (now - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("To'lov muvaffaqiyatli", "15 000 UZS qabul qilindi (Payme / Fiskal: FISC-88214)", "SUCCESS", (now - timedelta(minutes=18)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("Shlagbaum ochildi", "Farrux Yusupov (Operator): Tez tibbiy yordam avtomobili", "WARNING", (now - timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("Bron faollashdi", "01 001 PPP (VIP-02 zaxiralangan joy)", "INFO", (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S"))
+            ]
+            cursor.executemany("""
+                INSERT INTO system_notifications (title, message, type, created_at)
+                VALUES (?, ?, ?, ?)
+            """, notifs)
+
     # --------------------------------------------------------------------------
     # CRUD METODLARI
     # --------------------------------------------------------------------------
@@ -286,7 +313,9 @@ class ParklyDatabase:
             """, (ses_code, plate, assigned_slot, now_str))
 
             conn.commit()
-            return {"slot": assigned_slot, "plate": plate, "time": now_str, "session": ses_code}
+
+        self.add_notification("Yangi avto kirdi", f"{plate} ({assigned_slot} slotiga biriktirildi)", "INFO")
+        return {"slot": assigned_slot, "plate": plate, "time": now_str, "session": ses_code}
 
     def simulate_car_exit(self, slot_number):
         """Avto chiqishi va to'lovni yozish"""
@@ -317,7 +346,9 @@ class ParklyDatabase:
             """, (tx_code, "SES-AUTO", plate, provider, amount, f"FISC-{random.randint(10000, 99999)}"))
 
             conn.commit()
-            return {"plate": plate, "amount": amount, "provider": provider}
+
+        self.add_notification("Avto chiqdi", f"{plate} ({slot_number} bo'shatildi, {amount} UZS to'landi)", "SUCCESS")
+        return {"plate": plate, "amount": amount, "provider": provider}
 
     def get_dashboard_stats(self):
         """Dinamik bosh sahifa ko'rsatkichlari"""
@@ -417,7 +448,9 @@ class ParklyDatabase:
                 VALUES (?, ?, ?)
             """, (operator_username, operator_name, reason))
             conn.commit()
-            return True
+
+        self.add_notification("Shlagbaum qo'lda ochildi", f"{operator_name}: {reason}", "WARNING")
+        return True
 
     def get_settings(self):
         """Tizim sozlamalari"""
@@ -437,3 +470,96 @@ class ParklyDatabase:
                 """, (k, str(v)))
             conn.commit()
             return True
+
+    # --------------------------------------------------------------------------
+    # FOYDALANUVCHI PROFILI VA PAROLNI SOZLASH
+    # --------------------------------------------------------------------------
+    def get_user_by_id(self, user_id):
+        """Foydalanuvchini ID bo'yicha olish"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, username, full_name, role, shift, is_active FROM staff_users WHERE id = ?", (user_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def update_user_profile(self, user_id, full_name, username, current_password=None, new_password=None):
+        """
+        Foydalanuvchi ismi, logini va parolini o'zgartirish
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # 1. Joriy foydalanuvchini tekshirish
+            cursor.execute("SELECT password FROM staff_users WHERE id = ?", (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return False, "Foydalanuvchi topilmadi!"
+
+            # Parol kiritilgan bo'lsa, joriy parolni tekshirish
+            if current_password:
+                if row["password"] != current_password:
+                    return False, "Hozirgi parol noto'g'ri kiritildi!"
+
+            # 2. Login band emasligini tekshirish
+            cursor.execute("SELECT id FROM staff_users WHERE username = ? AND id != ?", (username, user_id))
+            if cursor.fetchone():
+                return False, f"'{username}' logini boshqa xodim tomonidan band qilingan!"
+
+            # 3. Ma'lumotlarni yangilash
+            if new_password and new_password.strip():
+                cursor.execute("""
+                    UPDATE staff_users
+                    SET full_name = ?, username = ?, password = ?
+                    WHERE id = ?
+                """, (full_name, username, new_password.strip(), user_id))
+            else:
+                cursor.execute("""
+                    UPDATE staff_users
+                    SET full_name = ?, username = ?
+                    WHERE id = ?
+                """, (full_name, username, user_id))
+
+            conn.commit()
+            self.add_notification(
+                "Profil yangilandi",
+                f"{full_name} ({username}) ma'lumotlari muvaffaqiyatli yangilandi.",
+                "SUCCESS"
+            )
+            return True, "Profil ma'lumotlari muvaffaqiyatli saqlandi!"
+
+    # --------------------------------------------------------------------------
+    # XABARNOMALAR (NOTIFICATIONS)
+    # --------------------------------------------------------------------------
+    def get_notifications(self, limit=15):
+        """Barcha bildirishnomalar ro'yxati"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM system_notifications ORDER BY id DESC LIMIT ?", (limit,))
+            return [dict(r) for r in cursor.fetchall()]
+
+    def get_unread_notifications_count(self):
+        """O'qilmagan xabarnomalar soni"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM system_notifications WHERE is_read = 0")
+            return cursor.fetchone()[0]
+
+    def mark_all_notifications_read(self):
+        """Barcha xabarnomalarni o'qilgan deb belgilash"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE system_notifications SET is_read = 1 WHERE is_read = 0")
+            conn.commit()
+            return True
+
+    def add_notification(self, title, message, n_type="INFO"):
+        """Yangi xabarnoma qo'shish"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO system_notifications (title, message, type)
+                VALUES (?, ?, ?)
+            """, (title, message, n_type))
+            conn.commit()
+            return True
+
