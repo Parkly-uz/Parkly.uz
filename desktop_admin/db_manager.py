@@ -6,6 +6,7 @@ Barcha ma'lumotlar haqiqiy lokal DB faylida (parkly_local.db) saqlanadi va dinam
 import sqlite3
 import os
 import random
+import csv
 from datetime import datetime, timedelta
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "parkly_local.db")
@@ -80,7 +81,9 @@ class ParklyDatabase:
             for m_sql in [
                 "ALTER TABLE parking_slots ADD COLUMN current_vehicle_model TEXT",
                 "ALTER TABLE parking_slots ADD COLUMN entry_time TEXT",
-                "ALTER TABLE parking_sessions ADD COLUMN vehicle_model TEXT"
+                "ALTER TABLE parking_sessions ADD COLUMN vehicle_model TEXT",
+                "ALTER TABLE transactions ADD COLUMN duration TEXT",
+                "ALTER TABLE transactions ADD COLUMN payment_method TEXT",
             ]:
                 try:
                     cursor.execute(m_sql)
@@ -94,10 +97,12 @@ class ParklyDatabase:
                 tx_code TEXT UNIQUE NOT NULL,
                 session_code TEXT NOT NULL,
                 vehicle_plate TEXT NOT NULL,
-                provider TEXT NOT NULL, -- Payme, Click, Naqd
+                provider TEXT NOT NULL, -- Payme, Click, Naqd, Uzum
                 amount INTEGER NOT NULL,
                 status TEXT DEFAULT 'SUCCESS',
                 fiscal_sign TEXT,
+                duration TEXT DEFAULT '01:15:00',
+                payment_method TEXT DEFAULT 'Elektron To''lov',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
             """)
@@ -164,18 +169,26 @@ class ParklyDatabase:
             conn.commit()
 
     def _seed_default_data(self, cursor):
-        # 1. Xodimlar mavjudligini tekshirish
-        cursor.execute("SELECT COUNT(*) FROM staff_users")
-        if cursor.fetchone()[0] == 0:
+        # 1. Xodimlar mavjudligini tekshirish (Super-Admin: 2 kishi, Oddiy Admin: 4 kishi, Operator: 2 kishi)
+        cursor.execute("SELECT COUNT(*) FROM staff_users WHERE role = 'SUPER_ADMIN'")
+        super_cnt = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM staff_users WHERE role = 'ADMIN'")
+        admin_cnt = cursor.fetchone()[0]
+
+        if super_cnt != 2 or admin_cnt != 4:
+            cursor.execute("DELETE FROM staff_users")
             default_staff = [
-                ("admin", "admin123", "Erjigit (Bosh Rahbar)", "SUPER_ADMIN", "Barcha hudud"),
-                ("manager", "manager123", "Sherzod Aliyev", "ADMIN", "Filial 1"),
-                ("admin_chilonzor", "admin123", "Jahongir Qodirov", "ADMIN", "Filial 2"),
-                ("operator1", "operator123", "Aziz Rustamov", "OPERATOR", "Smena 1 (08:00 - 16:00)"),
-                ("operator2", "operator123", "Bobur Mirzayev", "OPERATOR", "Smena 2 (16:00 - 00:00)"),
-                ("operator3", "operator123", "Dilshod Karimov", "OPERATOR", "Smena 3 (00:00 - 08:00)"),
-                ("operator4", "operator123", "Farrux Yusupov", "OPERATOR", "Zaxira 1"),
-                ("operator5", "operator123", "G'ayrat Xoliqov", "OPERATOR", "Zaxira 2"),
+                # 2 Ta Super-Admin (Tizimning to'liq arxitekturasi, uskunalar va xodimlar boshqaruvi)
+                ("admin", "admin123", "Erjigit (Bosh Rahbar)", "SUPER_ADMIN", "Boshqaruv / Barcha hudud"),
+                ("superadmin2", "admin123", "Sherzod Aliyev (Tizim Arxitektori)", "SUPER_ADMIN", "Texnik va Tizim Boshqaruvi"),
+                # 4 Ta Oddiy Admin (Operatsion jarayon, tushumlarni monitoring qilish, tranzaksiyalar va navbatchilik)
+                ("admin_yunusobod", "admin123", "Jahongir Qodirov", "ADMIN", "Yunusobod Filiali"),
+                ("admin_chilonzor", "admin123", "Aziz Rustamov", "ADMIN", "Chilonzor Filiali"),
+                ("admin_mirobod", "admin123", "Bobur Mirzayev", "ADMIN", "Mirobod Filiali"),
+                ("admin_sergeli", "admin123", "Dilshod Karimov", "ADMIN", "Sergeli Filiali"),
+                # 2 Ta Navbatchi Operator
+                ("operator1", "operator123", "Farrux Yusupov", "OPERATOR", "Smena 1 (08:00 - 16:00)"),
+                ("operator2", "operator123", "G'ayrat Xoliqov", "OPERATOR", "Smena 2 (16:00 - 00:00)"),
             ]
             cursor.executemany("""
                 INSERT INTO staff_users (username, password, full_name, role, shift)
@@ -269,20 +282,57 @@ class ParklyDatabase:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, slots)
 
-        # 3. Dastlabki Tranzaksiyalar va Seanslar
+        # 3. Dastlabki Tranzaksiyalar va Seanslar (Kunlik, Haftalik va Oylik hisobotlar uchun)
         cursor.execute("SELECT COUNT(*) FROM transactions")
-        if cursor.fetchone()[0] == 0:
+        if cursor.fetchone()[0] < 15:
+            cursor.execute("DELETE FROM transactions")
             now = datetime.now()
             txs = [
-                ("TX-9901", "SES-1049", "01 A 777 AA", "Payme", 15000, "FISC-88214", (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")),
-                ("TX-9902", "SES-1048", "10 123 BBA", "Click", 10000, "FISC-88213", (now - timedelta(minutes=25)).strftime("%Y-%m-%d %H:%M:%S")),
-                ("TX-9903", "SES-1047", "01 888 ZZZ", "Payme", 35000, "FISC-88212", (now - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")),
-                ("TX-9904", "SES-1045", "30 456 VVA", "Naqd", 20000, "FISC-88211", (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")),
-                ("TX-9905", "SES-1044", "01 111 AAA", "Payme", 50000, "FISC-88210", (now - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S")),
+                # Bugungi tranzaksiyalar (Kunlik)
+                ("TX-9921", "SES-1049", "01 A 777 AA", "Payme", 15000, "FISC-88221", "01:15:00", "Payme Ilovasi", (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9920", "SES-1048", "10 123 BBA", "Click", 10000, "FISC-88220", "00:45:00", "Click Up", (now - timedelta(minutes=40)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9919", "SES-1047", "01 888 ZZZ", "Payme", 35000, "FISC-88219", "02:10:00", "Payme Ilovasi", (now - timedelta(hours=1, minutes=20)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9918", "SES-1045", "30 456 VVA", "Naqd", 20000, "FISC-88218", "01:30:00", "Kassa (Naqd)", (now - timedelta(hours=2, minutes=10)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9917", "SES-1044", "01 111 AAA", "Uzum", 25000, "FISC-88217", "01:45:00", "Uzum Bank", (now - timedelta(hours=3, minutes=30)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9916", "SES-1043", "01 B 999 BB", "Payme", 30000, "FISC-88216", "02:00:00", "Payme Ilovasi", (now - timedelta(hours=4, minutes=10)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9915", "SES-1042", "50 555 EEV", "Click", 50000, "FISC-88215", "03:20:00", "Click Up", (now - timedelta(hours=5, minutes=15)).strftime("%Y-%m-%d %H:%M:%S")),
+
+                # 1 kun oldin (Kechagi)
+                ("TX-9914", "SES-1039", "01 321 TES", "Payme", 35000, "FISC-88214", "02:15:00", "Payme Ilovasi", (now - timedelta(days=1, hours=2)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9913", "SES-1038", "10 888 BYD", "Uzum", 20000, "FISC-88213", "01:20:00", "Uzum Bank", (now - timedelta(days=1, hours=4)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9912", "SES-1037", "01 555 TTT", "Naqd", 15000, "FISC-88212", "01:05:00", "Kassa (Naqd)", (now - timedelta(days=1, hours=6)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9911", "SES-1036", "80 444 RRR", "Click", 25000, "FISC-88211", "01:40:00", "Click Up", (now - timedelta(days=1, hours=7)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9910", "SES-1035", "01 717 AAA", "Payme", 15000, "FISC-88210", "00:55:00", "Payme Ilovasi", (now - timedelta(days=1, hours=9)).strftime("%Y-%m-%d %H:%M:%S")),
+
+                # 2 kun oldin
+                ("TX-9909", "SES-1034", "01 909 BBB", "Click", 20000, "FISC-88209", "01:30:00", "Click Up", (now - timedelta(days=2, hours=2)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9908", "SES-1033", "01 A 007 AA", "Payme", 45000, "FISC-88208", "03:10:00", "Payme Ilovasi", (now - timedelta(days=2, hours=5)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9907", "SES-1032", "01 444 ELV", "Uzum", 30000, "FISC-88207", "02:00:00", "Uzum Bank", (now - timedelta(days=2, hours=7)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9906", "SES-1031", "10 707 XXX", "Naqd", 10000, "FISC-88206", "00:40:00", "Kassa (Naqd)", (now - timedelta(days=2, hours=9)).strftime("%Y-%m-%d %H:%M:%S")),
+
+                # 3 kun oldin
+                ("TX-9905", "SES-1030", "01 333 YYY", "Payme", 25000, "FISC-88205", "01:45:00", "Payme Ilovasi", (now - timedelta(days=3, hours=3)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9904", "SES-1029", "01 234 OOO", "Click", 15000, "FISC-88204", "01:10:00", "Click Up", (now - timedelta(days=3, hours=5)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9903", "SES-1028", "01 001 PPP", "Payme", 50000, "FISC-88203", "03:40:00", "Payme Ilovasi", (now - timedelta(days=3, hours=8)).strftime("%Y-%m-%d %H:%M:%S")),
+
+                # 4 kun oldin
+                ("TX-9902", "SES-1027", "20 567 BBB", "Uzum", 20000, "FISC-88202", "01:25:00", "Uzum Bank", (now - timedelta(days=4, hours=2)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9901", "SES-1026", "40 999 ZZZ", "Naqd", 35000, "FISC-88201", "02:20:00", "Kassa (Naqd)", (now - timedelta(days=4, hours=6)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-9900", "SES-1025", "01 777 EVV", "Click", 30000, "FISC-88200", "02:00:00", "Click Up", (now - timedelta(days=4, hours=9)).strftime("%Y-%m-%d %H:%M:%S")),
+
+                # 5 kun oldin
+                ("TX-8999", "SES-1024", "10 444 KKK", "Payme", 20000, "FISC-88199", "01:15:00", "Payme Ilovasi", (now - timedelta(days=5, hours=3)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-8998", "SES-1023", "01 888 BBB", "Click", 15000, "FISC-88198", "01:00:00", "Click Up", (now - timedelta(days=5, hours=5)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-8997", "SES-1022", "60 123 CCC", "Naqd", 25000, "FISC-88197", "01:40:00", "Kassa (Naqd)", (now - timedelta(days=5, hours=8)).strftime("%Y-%m-%d %H:%M:%S")),
+
+                # 6 kun oldin
+                ("TX-8996", "SES-1021", "01 321 AAA", "Payme", 40000, "FISC-88196", "02:45:00", "Payme Ilovasi", (now - timedelta(days=6, hours=3)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-8995", "SES-1020", "10 654 DDD", "Uzum", 15000, "FISC-88195", "01:05:00", "Uzum Bank", (now - timedelta(days=6, hours=6)).strftime("%Y-%m-%d %H:%M:%S")),
+                ("TX-8994", "SES-1019", "01 789 EEE", "Click", 30000, "FISC-88194", "02:00:00", "Click Up", (now - timedelta(days=6, hours=9)).strftime("%Y-%m-%d %H:%M:%S")),
             ]
             cursor.executemany("""
-                INSERT INTO transactions (tx_code, session_code, vehicle_plate, provider, amount, fiscal_sign, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO transactions (tx_code, session_code, vehicle_plate, provider, amount, fiscal_sign, duration, payment_method, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, txs)
 
             # Seanslar
@@ -293,25 +343,27 @@ class ParklyDatabase:
                 ("SES-1046", "01 001 PPP", "VIP-02", (now - timedelta(hours=3)).strftime("%H:%M:%S"), None, 0, "VIP", "ACTIVE"),
             ]
             cursor.executemany("""
-                INSERT INTO parking_sessions (session_code, vehicle_plate, slot_number, entry_time, exit_time, total_amount, payment_provider, status)
+                INSERT OR IGNORE INTO parking_sessions (session_code, vehicle_plate, slot_number, entry_time, exit_time, total_amount, payment_provider, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, sessions)
 
         # 4. Tizim sozlamalari
-        cursor.execute("SELECT COUNT(*) FROM system_settings")
-        if cursor.fetchone()[0] == 0:
-            settings = [
-                ("day_rate", "5000", "Kunduzgi soatlik stavka (08:00 - 20:00)"),
-                ("night_rate", "3000", "Tungi soatlik stavka (20:00 - 08:00)"),
-                ("grace_period", "15", "Dastlabki bepul oraliq (daqiqa)"),
-                ("exit_grace", "15", "To'lovdan so'ng chiqish oralig'i (daqiqa)"),
-                ("daily_cap", "50000", "Kunlik maksimal to'lov chegarasi (so'm)"),
-                ("barrier_auto_open", "1", "Shlagbaum avtomatik ochilishi (1=ha, 0=yo'q)"),
-            ]
-            cursor.executemany("""
+        default_settings = [
+            ("day_rate", "5000", "Kunduzgi soatlik stavka (08:00 - 20:00, so'm)"),
+            ("night_rate", "3000", "Tungi soatlik stavka (20:00 - 08:00, so'm)"),
+            ("minute_rate", "100", "Daqiqabay stavka (so'm/daqiqa)"),
+            ("ev_rate", "2500", "EV Quvvatlash qo'shimcha stavkasi (so'm/soat)"),
+            ("grace_period", "15", "Dastlabki bepul oraliq (daqiqa)"),
+            ("exit_grace", "15", "To'lovdan so'ng chiqish oralig'i (daqiqa)"),
+            ("daily_cap", "50000", "Kunlik maksimal to'lov chegarasi (so'm)"),
+            ("barrier_auto_open", "1", "Shlagbaum avtomatik ochilishi (1=ha, 0=yo'q)"),
+        ]
+        for k, v, d in default_settings:
+            cursor.execute("""
                 INSERT INTO system_settings (key, value, description)
                 VALUES (?, ?, ?)
-            """, settings)
+                ON CONFLICT(key) DO UPDATE SET description = excluded.description
+            """, (k, v, d))
 
         # 5. Dastlabki Xabarnomalar (Notifications)
         cursor.execute("SELECT COUNT(*) FROM system_notifications")
@@ -590,29 +642,254 @@ class ParklyDatabase:
             self.add_notification("Xodim o'chirildi", f"{user['full_name']} ({user['username']}) tizimdan o'chirildi.", "WARNING")
             return True, "Xodim tizimdan o'chirildi!"
 
-    def get_financial_summary(self):
-        """Moliya va kassa hisoboti"""
+    def get_financial_summary(self, period="day"):
+        """
+        Moliya va kassa hisoboti:
+        - Kunlik (today), haftalik (7 kun) va oylik (30 kun) tushumlar hisoboti
+        - To'lov provayderlari (Payme, Click, Naqd, Uzum) ulushlari va summalari
+        - O'rtacha chek va tranzaksiyalar soni
+        - 7 kunlik trend grafigi ma'lumotlari
+        """
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            cursor.execute("SELECT SUM(amount) FROM transactions WHERE provider = 'Payme'")
-            payme = cursor.fetchone()[0] or 0
+            # Kunlik tushum (Bugun)
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0), COUNT(*) FROM transactions
+                WHERE status = 'SUCCESS' AND date(created_at) = date('now', 'localtime')
+            """)
+            r_day, c_day = cursor.fetchone()
 
-            cursor.execute("SELECT SUM(amount) FROM transactions WHERE provider = 'Click'")
-            click = cursor.fetchone()[0] or 0
+            # Haftalik tushum (So'nggi 7 kun)
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0), COUNT(*) FROM transactions
+                WHERE status = 'SUCCESS' AND date(created_at) >= date('now', '-7 days', 'localtime')
+            """)
+            r_week, c_week = cursor.fetchone()
 
-            cursor.execute("SELECT SUM(amount) FROM transactions WHERE provider = 'Naqd'")
-            cash = cursor.fetchone()[0] or 0
+            # Oylik tushum (Joriy oy)
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0), COUNT(*) FROM transactions
+                WHERE status = 'SUCCESS' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', 'localtime')
+            """)
+            r_month, c_month = cursor.fetchone()
 
-            cursor.execute("SELECT * FROM transactions ORDER BY id DESC LIMIT 20")
-            txs = [dict(r) for r in cursor.fetchall()]
+            # Jami umumiy tushum
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0), COUNT(*) FROM transactions
+                WHERE status = 'SUCCESS'
+            """)
+            r_total, c_total = cursor.fetchone()
+
+            # Provayderlar bo'yicha tushum
+            providers = ["Payme", "Click", "Naqd", "Uzum"]
+            prov_totals = {}
+            for p in providers:
+                cursor.execute("""
+                    SELECT COALESCE(SUM(amount), 0), COUNT(*) FROM transactions
+                    WHERE status = 'SUCCESS' AND provider = ?
+                """, (p,))
+                amt, cnt = cursor.fetchone()
+                prov_totals[p] = {"amount": amt, "count": cnt}
+
+            # Tanlangan davr bo'yicha statistika
+            if period == "day":
+                cur_revenue, cur_count = r_day, c_day
+            elif period == "week":
+                cur_revenue, cur_count = r_week, c_week
+            elif period == "month":
+                cur_revenue, cur_count = r_month, c_month
+            else:
+                cur_revenue, cur_count = r_total, c_total
+
+            avg_check = int(cur_revenue / cur_count) if cur_count > 0 else 0
+
+            # 7 kunlik trend grafigi ma'lumotlari (Bar Chart uchun)
+            uz_day_names = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"]
+            chart_data = []
+            now = datetime.now()
+            for i in range(6, -1, -1):
+                d = now - timedelta(days=i)
+                d_str = d.strftime("%Y-%m-%d")
+                weekday_name = uz_day_names[d.weekday()]
+                cursor.execute("""
+                    SELECT COALESCE(SUM(amount), 0), COUNT(*) FROM transactions
+                    WHERE status = 'SUCCESS' AND date(created_at) = ?
+                """, (d_str,))
+                d_amt, d_cnt = cursor.fetchone()
+                chart_data.append({
+                    "date": d_str,
+                    "day_name": weekday_name,
+                    "revenue": d_amt,
+                    "count": d_cnt
+                })
+
+            cursor.execute("""
+                SELECT id, tx_code, session_code, vehicle_plate, provider, amount, status,
+                       COALESCE(fiscal_sign, 'FISC-00000') as fiscal_sign,
+                       COALESCE(duration, '01:15:00') as duration,
+                       COALESCE(payment_method, provider) as payment_method,
+                       created_at
+                FROM transactions
+                WHERE status = 'SUCCESS'
+                ORDER BY id DESC LIMIT 20
+            """)
+            recent_txs = [dict(r) for r in cursor.fetchall()]
 
             return {
-                "payme_total": payme,
-                "click_total": click,
-                "cash_total": cash,
-                "transactions": txs
+                "today_revenue": r_day,
+                "today_count": c_day,
+                "week_revenue": r_week,
+                "week_count": c_week,
+                "month_revenue": r_month,
+                "month_count": c_month,
+                "total_revenue": r_total,
+                "total_count": c_total,
+                "period_revenue": cur_revenue,
+                "period_count": cur_count,
+                "avg_check": avg_check,
+                "payme_total": prov_totals["Payme"]["amount"],
+                "click_total": prov_totals["Click"]["amount"],
+                "cash_total": prov_totals["Naqd"]["amount"],
+                "uzum_total": prov_totals["Uzum"]["amount"],
+                "providers": prov_totals,
+                "chart_data": chart_data,
+                "transactions": recent_txs
             }
+
+    def get_transaction_history(self, search="", provider="BARCHASI", period="all", limit=100):
+        """
+        Barcha to'lovlar, sessiyalar davomiyligi va to'lov usullari (Naqd/Karta/App) bazasi.
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            conditions = ["1=1"]
+            params = []
+
+            if provider and provider != "BARCHASI":
+                conditions.append("provider = ?")
+                params.append(provider)
+
+            if search and search.strip():
+                s = f"%{search.strip()}%"
+                conditions.append("(vehicle_plate LIKE ? OR tx_code LIKE ? OR session_code LIKE ? OR fiscal_sign LIKE ?)")
+                params.extend([s, s, s, s])
+
+            if period == "day":
+                conditions.append("date(created_at) = date('now', 'localtime')")
+            elif period == "week":
+                conditions.append("date(created_at) >= date('now', '-7 days', 'localtime')")
+            elif period == "month":
+                conditions.append("strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', 'localtime')")
+
+            where_clause = " AND ".join(conditions)
+            params.append(limit)
+
+            sql = f"""
+                SELECT id, tx_code, session_code, vehicle_plate, provider, amount, status,
+                       COALESCE(fiscal_sign, 'FISC-00000') as fiscal_sign,
+                       COALESCE(duration, '01:15:00') as duration,
+                       COALESCE(payment_method, provider) as payment_method,
+                       created_at
+                FROM transactions
+                WHERE {where_clause}
+                ORDER BY id DESC LIMIT ?
+            """
+            cursor.execute(sql, params)
+            return [dict(r) for r in cursor.fetchall()]
+
+    def export_financial_report(self, export_format="csv", filepath=None):
+        """
+        Moliyaviy hisobotlarni Excel / CSV formatida yuklab olish.
+        Excel'da o'zbekcha yozuvlar buzilmasligi uchun UTF-8-SIG (BOM) va
+        Windows Excel uchun qulay ';' ajratuvchisi bilan shakllantiriladi.
+        """
+        try:
+            now_dt = datetime.now()
+            if not filepath:
+                export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "exports")
+                os.makedirs(export_dir, exist_ok=True)
+                ext = "csv" if export_format.lower() in ["csv", "excel"] else export_format.lower()
+                filename = f"Parkly_Moliyaviy_Hisobot_{now_dt.strftime('%Y%m%d_%H%M%S')}.{ext}"
+                filepath = os.path.join(export_dir, filename)
+
+            summary = self.get_financial_summary(period="all")
+            txs = self.get_transaction_history(limit=5000)
+
+            with open(filepath, "w", encoding="utf-8-sig", newline="") as f:
+                writer = csv.writer(f, delimiter=";")
+                # Sarlavha bloki
+                writer.writerow(["PARKLY.UZ — AQLLI AVTOTURARGOH MOLIYAVIY VA TRANZAKSIYALAR HISOBOTI", "", "", "", "", "", "", "", "", ""])
+                writer.writerow(["Hisobot Shakllantirilgan Sana:", now_dt.strftime("%Y-%m-%d %H:%M:%S"), "", "", "", "", "", "", "", ""])
+                writer.writerow(["Jami Tushum:", f"{summary['total_revenue']:,} UZS".replace(",", " "), "", "", "", "", "", "", "", ""])
+                writer.writerow(["Bugungi Tushum:", f"{summary['today_revenue']:,} UZS".replace(",", " "), "Haftalik:", f"{summary['week_revenue']:,} UZS".replace(",", " "), "Oylik:", f"{summary['month_revenue']:,} UZS".replace(",", " "), "", "", "", ""])
+                writer.writerow(["Payme:", f"{summary['payme_total']:,} UZS".replace(",", " "), "Click:", f"{summary['click_total']:,} UZS".replace(",", " "), "Naqd:", f"{summary['cash_total']:,} UZS".replace(",", " "), "Uzum:", f"{summary['uzum_total']:,} UZS".replace(",", " ")])
+                writer.writerow([])
+                writer.writerow([
+                    "ID", "Tranzaksiya Kodi", "Fiskal Belgisi", "Seans Kodi",
+                    "Avtomobil Raqami", "To'lov Provayderi", "To'lov Usuli",
+                    "Turish Davomiyligi", "To'lov Summasi (UZS)", "Holat", "Sana va Vaqt"
+                ])
+
+                for tx in txs:
+                    writer.writerow([
+                        tx.get("id"),
+                        tx.get("tx_code"),
+                        tx.get("fiscal_sign"),
+                        tx.get("session_code"),
+                        tx.get("vehicle_plate"),
+                        tx.get("provider"),
+                        tx.get("payment_method"),
+                        tx.get("duration"),
+                        tx.get("amount"),
+                        tx.get("status"),
+                        tx.get("created_at")
+                    ])
+
+            self.add_notification("Moliyaviy hisobot eksport qilindi", f"Fayl saqlandi: {os.path.basename(filepath)}", "INFO")
+            return True, filepath
+        except Exception as e:
+            return False, str(e)
+
+    def update_tariff_rates(self, rates: dict, user_role: str = "SUPER_ADMIN"):
+        """
+        (Faqat Super-Admin) Soatbay, daqiqabay va tungi tarif narxlarini o'zgartirish.
+        Huquqlar matritsasi talabi bo'yicha Oddiy Adminlarga ruxsat berilmaydi.
+        """
+        if user_role != "SUPER_ADMIN":
+            return False, "Ruxsat taqiqlangan! Huquqlar matritsasiga muvofiq, tarif stavkalarini faqat Super-Admin o'zgartirishi mumkin."
+
+        allowed_keys = {
+            "day_rate": "Kunduzgi soatlik stavka (08:00 - 20:00, so'm)",
+            "night_rate": "Tungi soatlik stavka (20:00 - 08:00, so'm)",
+            "minute_rate": "Daqiqabay stavka (so'm/daqiqa)",
+            "ev_rate": "EV Quvvatlash qo'shimcha stavkasi (so'm/soat)",
+            "grace_period": "Dastlabki bepul oraliq (daqiqa)",
+            "exit_grace": "To'lovdan so'ng chiqish oralig'i (daqiqa)",
+            "daily_cap": "Kunlik maksimal to'lov chegarasi (so'm)"
+        }
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            for key, val in rates.items():
+                if key in allowed_keys:
+                    desc = allowed_keys[key]
+                    cursor.execute("""
+                        INSERT INTO system_settings (key, value, description)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                    """, (key, str(val), desc))
+            conn.commit()
+
+        day_r = rates.get("day_rate", "5000")
+        night_r = rates.get("night_rate", "3000")
+        min_r = rates.get("minute_rate", "100")
+        self.add_notification(
+            "Tarif stavkalari yangilandi",
+            f"Super-Admin tariflarni o'zgartirdi: Kunduzgi {day_r} UZS, Tungi {night_r} UZS, Daqiqa {min_r} UZS.",
+            "SUCCESS"
+        )
+        return True, "Tarif stavkalari muvaffaqiyatli yangilandi!"
 
     def get_barrier_audits(self):
         """Shlagbaum ochish jurnali"""

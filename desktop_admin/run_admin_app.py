@@ -31,12 +31,13 @@ from PyQt6.QtWidgets import (
     QGridLayout, QFrame, QLabel, QPushButton, QLineEdit, QComboBox,
     QCheckBox, QTableWidget, QTableWidgetItem, QHeaderView, QStackedWidget,
     QMessageBox, QProgressBar, QScrollArea, QGraphicsDropShadowEffect,
-    QTabWidget
+    QTabWidget, QFileDialog
 )
 from PyQt6.QtGui import (
-    QColor, QFont, QLinearGradient, QPixmap, QIcon, QCursor
+    QColor, QFont, QLinearGradient, QPixmap, QIcon, QCursor,
+    QPainter, QPen, QBrush
 )
-from PyQt6.QtCore import Qt, QSize, QTimer
+from PyQt6.QtCore import Qt, QSize, QTimer, QRectF, QRect
 
 from db_manager import ParklyDatabase
 from isometric_map import IsometricParkingMapWidget
@@ -111,6 +112,34 @@ def create_status_badge(status_text: str) -> QLabel:
             color: {fg};
             font-size: 10.5px;
             font-weight: 700;
+            border-radius: 12px;
+            padding: 4px 10px;
+        }}
+    """)
+    return lbl
+
+
+def create_role_badge(role_text: str) -> QLabel:
+    """Xodim rolini rangli badge ko'rinishida chiqarish"""
+    r = role_text.upper()
+    if "SUPER" in r:
+        bg, fg = "#EDE9FE", "#6D28D9"
+        display = "SUPER_ADMIN"
+    elif "ADMIN" in r:
+        bg, fg = "#E0F2FE", "#0369A1"
+        display = "ODDIY ADMIN"
+    else:
+        bg, fg = "#FEF3C7", "#92400E"
+        display = "OPERATOR"
+
+    lbl = QLabel(f"  {display}  ")
+    lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    lbl.setStyleSheet(f"""
+        QLabel {{
+            background-color: {bg};
+            color: {fg};
+            font-size: 10.5px;
+            font-weight: 800;
             border-radius: 12px;
             padding: 4px 10px;
         }}
@@ -293,19 +322,32 @@ class LoginDialog(QDialog):
         tb_lbl.setStyleSheet("font-size: 11px; font-weight: 700; color: #64748b;")
         tb_layout.addWidget(tb_lbl)
 
-        btn_fill_admin = QPushButton("Super-Admin: admin", test_box)
+        btn_fill_admin = QPushButton("Super-Admin", test_box)
+        btn_fill_admin.setToolTip("Erjigit (Bosh Rahbar) - To'liq boshqaruv")
         btn_fill_admin.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_fill_admin.setStyleSheet("color: #0d9488; font-weight: 700; font-size: 11px; border: none; background: transparent;")
         btn_fill_admin.clicked.connect(lambda: self.fill_credentials("admin", "admin123"))
         tb_layout.addWidget(btn_fill_admin)
 
-        tb_div = QLabel("|", test_box)
-        tb_div.setStyleSheet("color: #cbd5e1;")
-        tb_layout.addWidget(tb_div)
+        tb_div1 = QLabel("|", test_box)
+        tb_div1.setStyleSheet("color: #cbd5e1;")
+        tb_layout.addWidget(tb_div1)
 
-        btn_fill_op = QPushButton("Operator: operator1", test_box)
+        btn_fill_subadmin = QPushButton("Oddiy Admin", test_box)
+        btn_fill_subadmin.setToolTip("Jahongir Qodirov - Yunusobod filiali (Monitoring)")
+        btn_fill_subadmin.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_fill_subadmin.setStyleSheet("color: #0284c7; font-weight: 700; font-size: 11px; border: none; background: transparent;")
+        btn_fill_subadmin.clicked.connect(lambda: self.fill_credentials("admin_yunusobod", "admin123"))
+        tb_layout.addWidget(btn_fill_subadmin)
+
+        tb_div2 = QLabel("|", test_box)
+        tb_div2.setStyleSheet("color: #cbd5e1;")
+        tb_layout.addWidget(tb_div2)
+
+        btn_fill_op = QPushButton("Operator", test_box)
+        btn_fill_op.setToolTip("Farrux Yusupov - Smena 1")
         btn_fill_op.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fill_op.setStyleSheet("color: #0d9488; font-weight: 700; font-size: 11px; border: none; background: transparent;")
+        btn_fill_op.setStyleSheet("color: #64748b; font-weight: 700; font-size: 11px; border: none; background: transparent;")
         btn_fill_op.clicked.connect(lambda: self.fill_credentials("operator1", "operator123"))
         tb_layout.addWidget(btn_fill_op)
 
@@ -906,6 +948,235 @@ class EditStaffDialog(QDialog):
 
 
 # ==============================================================================
+# 2.3 HAFTALIK TUSHUMLAR GRAFIGI VIDJETI (CUSTOM BAR CHART WIDGET)
+# ==============================================================================
+class WeeklyFinanceChartWidget(QFrame):
+    """
+    7 kunlik moliyaviy tushumlar dinamik bar chart grafigi (PyQt6 QPainter).
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.chart_data = []
+        self.setMinimumHeight(240)
+        self.setStyleSheet("""
+            WeeklyFinanceChartWidget {
+                background-color: #ffffff;
+                border: 1px solid rgba(226, 232, 240, 0.8);
+                border-radius: 16px;
+            }
+        """)
+
+    def set_data(self, data):
+        self.chart_data = data or []
+        self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        w = self.width()
+        h = self.height()
+
+        margin_left = 65
+        margin_right = 30
+        margin_top = 45
+        margin_bottom = 50
+
+        plot_w = w - margin_left - margin_right
+        plot_h = h - margin_top - margin_bottom
+
+        if plot_w <= 0 or plot_h <= 0 or not self.chart_data:
+            painter.setPen(QColor("#94a3b8"))
+            painter.setFont(QFont("Segoe UI", 11))
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Moliyaviy ma'lumotlar yuklanmoqda...")
+            return
+
+        max_val = max([item.get("revenue", 0) for item in self.chart_data] + [50000])
+        max_round = int(((max_val // 50000) + 1) * 50000)
+
+        # Gorizontal to'r chiziqlari (Gridlines)
+        grid_steps = 4
+        for s in range(grid_steps + 1):
+            val = int(max_round * (s / grid_steps))
+            y = int(margin_top + plot_h - (s / grid_steps) * plot_h)
+
+            painter.setPen(QPen(QColor("#f1f5f9"), 1, Qt.PenStyle.DashLine))
+            painter.drawLine(margin_left, y, margin_left + plot_w, y)
+
+            painter.setPen(QColor("#94a3b8"))
+            painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Medium))
+            val_str = f"{val // 1000}K" if val >= 1000 else str(val)
+            painter.drawText(QRect(5, y - 8, margin_left - 12, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, val_str)
+
+        n = len(self.chart_data)
+        col_w = min(46, int(plot_w / (n * 1.55)))
+        gap = (plot_w - (n * col_w)) / (n + 1)
+
+        for i, item in enumerate(self.chart_data):
+            rev = item.get("revenue", 0)
+            d_name = item.get("day_name", "")
+            d_date = item.get("date", "")[-5:]
+
+            bar_h = int((rev / max_round) * plot_h) if max_round > 0 else 0
+            x = int(margin_left + gap + i * (col_w + gap))
+            y = int(margin_top + plot_h - bar_h)
+
+            # Ustun gradienti
+            grad = QLinearGradient(x, y, x, margin_top + plot_h)
+            if i == n - 1:  # Bugungi kun — ajralib turuvchi gradient
+                grad.setColorAt(0.0, QColor("#0066FF"))
+                grad.setColorAt(1.0, QColor("#38BDF8"))
+            else:
+                grad.setColorAt(0.0, QColor("#0d9488"))
+                grad.setColorAt(1.0, QColor("#2dd4bf"))
+
+            painter.setBrush(QBrush(grad))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawRoundedRect(QRectF(x, y, col_w, bar_h), 6, 6)
+
+            # Ustun tepasidagi tushum summasi
+            if rev > 0:
+                painter.setPen(QColor("#0f172a"))
+                painter.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+                val_text = f"{rev // 1000}K" if rev >= 1000 else str(rev)
+                painter.drawText(QRect(x - 12, y - 20, col_w + 24, 16), Qt.AlignmentFlag.AlignCenter, val_text)
+
+            # Ustun ostidagi kun nomi va sana
+            is_today = (i == n - 1)
+            painter.setPen(QColor("#0f172a" if is_today else "#475569"))
+            painter.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold if is_today else QFont.Weight.Normal))
+            label_text = "Bugun" if is_today else d_name
+            painter.drawText(QRect(x - 16, margin_top + plot_h + 8, col_w + 32, 16), Qt.AlignmentFlag.AlignCenter, label_text)
+
+            painter.setPen(QColor("#94a3b8"))
+            painter.setFont(QFont("Segoe UI", 8))
+            painter.drawText(QRect(x - 16, margin_top + plot_h + 24, col_w + 32, 14), Qt.AlignmentFlag.AlignCenter, d_date)
+
+
+# ==============================================================================
+# 2.4 TARIF NARXLARI VA TO'LOVLARNI SOZLASH DIALOGI (UPDATE TARIFF RATES MODAL)
+# ==============================================================================
+class TariffRatesDialog(QDialog):
+    """
+    (Faqat Super-Admin) Soatbay, daqiqabay va tungi tarif narxlarini sozlash modal oynasi.
+    Oddiy Adminlar uchun taqiqlanadi va tahrirlash bloklanadi.
+    """
+    def __init__(self, db: ParklyDatabase, user_role: str, parent=None):
+        super().__init__(parent)
+        self.db = db
+        self.user_role = user_role
+        self.setWindowTitle("Tarif Narxlari va To'lov Parametrlarini Sozlash")
+        self.setFixedSize(480, 560)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+        self.setup_ui()
+
+    def setup_ui(self):
+        self.setStyleSheet("""
+            QDialog { background: #f8fafc; font-family: 'Segoe UI', sans-serif; }
+            QLabel { font-weight: 600; color: #334155; font-size: 12.5px; }
+            QLineEdit { background: white; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 9px; font-size: 13px; color: #0f172a; }
+            QLineEdit:focus { border-color: #0d9488; }
+            QLineEdit:disabled { background: #f1f5f9; color: #94a3b8; }
+        """)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 24, 28, 24)
+        layout.setSpacing(12)
+
+        title = QLabel("Avtoturargoh Tarif Stavkalari", self)
+        title.setStyleSheet("font-size: 18px; font-weight: 800; color: #0f172a;")
+        layout.addWidget(title)
+
+        is_super = (self.user_role == "SUPER_ADMIN")
+        if not is_super:
+            badge = QLabel("🔒 Faqat Super-Admin ruxsatiga ega! Oddiy adminlar tariflarni o'zgartira olmaydi.", self)
+            badge.setStyleSheet("background: #fee2e2; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 12px;")
+            badge.setWordWrap(True)
+            layout.addWidget(badge)
+        else:
+            badge = QLabel("⚡ Super-Admin Huquqi: Tariflarni to'g'ridan-to'g'ri o'zgartirish va tasdiqlash.", self)
+            badge.setStyleSheet("background: #dbeafe; color: #1e40af; padding: 9px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;")
+            layout.addWidget(badge)
+
+        settings = self.db.get_settings()
+
+        form = QVBoxLayout()
+        form.setSpacing(8)
+
+        form.addWidget(QLabel("Kunduzgi soatlik stavka (08:00 - 20:00, so'm):"))
+        self.in_day = QLineEdit(self)
+        self.in_day.setText(settings.get("day_rate", "5000"))
+        self.in_day.setEnabled(is_super)
+        form.addWidget(self.in_day)
+
+        form.addWidget(QLabel("Tungi soatlik stavka (20:00 - 08:00, so'm):"))
+        self.in_night = QLineEdit(self)
+        self.in_night.setText(settings.get("night_rate", "3000"))
+        self.in_night.setEnabled(is_super)
+        form.addWidget(self.in_night)
+
+        form.addWidget(QLabel("Daqiqabay stavka (so'm/daqiqa):"))
+        self.in_min = QLineEdit(self)
+        self.in_min.setText(settings.get("minute_rate", "100"))
+        self.in_min.setEnabled(is_super)
+        form.addWidget(self.in_min)
+
+        form.addWidget(QLabel("EV Quvvatlash qo'shimcha stavkasi (so'm/soat):"))
+        self.in_ev = QLineEdit(self)
+        self.in_ev.setText(settings.get("ev_rate", "2500"))
+        self.in_ev.setEnabled(is_super)
+        form.addWidget(self.in_ev)
+
+        form.addWidget(QLabel("Dastlabki bepul oraliq (daqiqa):"))
+        self.in_grace = QLineEdit(self)
+        self.in_grace.setText(settings.get("grace_period", "15"))
+        self.in_grace.setEnabled(is_super)
+        form.addWidget(self.in_grace)
+
+        form.addWidget(QLabel("Kunlik maksimal to'lov (so'm):"))
+        self.in_cap = QLineEdit(self)
+        self.in_cap.setText(settings.get("daily_cap", "50000"))
+        self.in_cap.setEnabled(is_super)
+        form.addWidget(self.in_cap)
+
+        layout.addLayout(form)
+        layout.addStretch()
+
+        btn_box = QHBoxLayout()
+        if is_super:
+            btn_save = QPushButton("Tariflarni Saqlash", self)
+            btn_save.setIcon(get_icon("save.svg"))
+            btn_save.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_save.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 11px 20px; border-radius: 8px;")
+            btn_save.clicked.connect(self.save)
+            btn_box.addWidget(btn_save)
+
+        btn_close = QPushButton("Yopish", self)
+        btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_close.setStyleSheet("background: #e2e8f0; color: #475569; font-weight: 600; padding: 11px 20px; border-radius: 8px;")
+        btn_close.clicked.connect(self.reject)
+        btn_box.addWidget(btn_close)
+
+        layout.addLayout(btn_box)
+
+    def save(self):
+        rates = {
+            "day_rate": self.in_day.text().strip(),
+            "night_rate": self.in_night.text().strip(),
+            "minute_rate": self.in_min.text().strip(),
+            "ev_rate": self.in_ev.text().strip(),
+            "grace_period": self.in_grace.text().strip(),
+            "daily_cap": self.in_cap.text().strip(),
+        }
+        ok, msg = self.db.update_tariff_rates(rates, self.user_role)
+        if ok:
+            QMessageBox.information(self, "Muvaffaqiyat", msg)
+            self.accept()
+        else:
+            QMessageBox.critical(self, "Xatolik", msg)
+
+
+# ==============================================================================
 # 3. ASOSIY DASTUR OYNASI (MAIN WINDOW — 7 TA TO'LIQ MODUL)
 # ==============================================================================
 class MainWindow(QMainWindow):
@@ -1141,14 +1412,15 @@ class MainWindow(QMainWindow):
         d_layout.addLayout(dh)
 
         self.nav_btns = []
+        is_super = (self.user_data.get("role") == "SUPER_ADMIN")
         modules = [
             ("1. Dashboard", "dashboard.svg", 0),
             ("2. 3D Izometrik Xarita", "map.svg", 1),
             ("3. Kameralar (ANPR)", "camera.svg", 2),
-            ("4. Xodimlar (RBAC)", "users.svg", 3),
+            ("4. Moliya va Tranzaksiyalar", "wallet.svg", 3),
             ("5. Sessiyalar & Avtolar", "car.svg", 4),
-            ("6. Moliya va Kassa", "wallet.svg", 5),
-            ("7. Tizim Sozlamalari", "settings.svg", 6),
+            ("6. Xodimlar (RBAC)" + ("" if is_super else " 🔒"), "users.svg", 5),
+            ("7. Tizim Sozlamalari" + ("" if is_super else " 🔒"), "settings.svg", 6),
         ]
 
         for title, icon, idx in modules:
@@ -1174,14 +1446,15 @@ class MainWindow(QMainWindow):
         body_box.addWidget(self.drawer)
 
         # 7 Ta Modul Sahifasi (QStackedWidget)
+        self.finance_period = "day"
         self.stack = QStackedWidget(self.central_widget)
-        self.stack.addWidget(self.build_dashboard_page())    # Modul 0
-        self.stack.addWidget(self.build_map_page())          # Modul 1
-        self.stack.addWidget(self.build_cameras_page())      # Modul 2
-        self.stack.addWidget(self.build_staff_page())        # Modul 3
-        self.stack.addWidget(self.build_sessions_page())     # Modul 4
-        self.stack.addWidget(self.build_finance_page())      # Modul 5
-        self.stack.addWidget(self.build_settings_page())     # Modul 6
+        self.stack.addWidget(self.build_dashboard_page())    # Modul 0: 1. Dashboard
+        self.stack.addWidget(self.build_map_page())          # Modul 1: 2. 3D Xarita
+        self.stack.addWidget(self.build_cameras_page())      # Modul 2: 3. Kameralar (ANPR)
+        self.stack.addWidget(self.build_finance_page())      # Modul 3: 4. Moliya va Tranzaksiyalar
+        self.stack.addWidget(self.build_sessions_page())     # Modul 4: 5. Sessiyalar & Avtolar
+        self.stack.addWidget(self.build_staff_page())        # Modul 5: 6. Xodimlar (RBAC)
+        self.stack.addWidget(self.build_settings_page())     # Modul 6: 7. Tizim Sozlamalari
 
         body_box.addWidget(self.stack)
         root_layout.addLayout(body_box)
@@ -1190,10 +1463,28 @@ class MainWindow(QMainWindow):
         self.drawer.setVisible(not self.drawer.isVisible())
 
     def navigate_module(self, idx, title):
+        # RBAC Huquqlar Matritsasi: Oddiy Admin va Operatorlarga Xodimlar (5) va Tizim Sozlamalari (6) bloklangan!
+        if idx in (5, 6) and self.user_data.get("role") != "SUPER_ADMIN":
+            role_name = self.user_data.get("role", "ADMIN")
+            clean_title = title.replace(" 🔒", "").strip()
+            QMessageBox.warning(
+                self,
+                "Kirish Taqiqlangan (Huquqlar Matritsasi)",
+                f"<b>❌ Ruxsat etilmagan!</b><br><br>"
+                f"Siz tizimga <b>{role_name}</b> roli bilan kirgansiz.<br>"
+                f"Tizim Huquqlari Matritsasiga (Permissions Matrix) binoan, <b>'{clean_title}'</b> "
+                f"bo'limiga kirish va sozlash faqat <b>Super-Admin</b>lar (2 kishi) uchun ruxsat etilgan.<br><br>"
+                f"<i>Oddiy Adminlarga operatsion monitoring, 2D/3D xarita, kameralar, sessiyalar va moliyaviy tushumlarni kuzatish ruxsat etilgan.</i>"
+            )
+            cur_idx = self.stack.currentIndex()
+            for i, b in enumerate(self.nav_btns):
+                b.setChecked(i == cur_idx)
+            return
+
         for i, b in enumerate(self.nav_btns):
             b.setChecked(i == idx)
         self.stack.setCurrentIndex(idx)
-        self.lbl_module_title.setText(title)
+        self.lbl_module_title.setText(title.replace(" 🔒", "").strip())
 
     def update_user_topbar(self):
         name = self.user_data.get("full_name", "Admin")
@@ -1647,46 +1938,65 @@ class MainWindow(QMainWindow):
         self.update_user_topbar()
 
     # --------------------------------------------------------------------------
-    # MODUL 4: XODIMLAR VA RBAC BOSHQARUVI (MEDIA_1791451407240.PNG TALABI)
+    # MODUL 6: XODIMLAR VA RBAC BOSHQARUVI (MEDIA_1791451407240.PNG TALABI)
     # --------------------------------------------------------------------------
     def build_staff_page(self):
         page = QWidget()
-        layout = QVBoxLayout(page)
+        scroll = QScrollArea(page)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        inner = QWidget()
+        layout = QVBoxLayout(inner)
         layout.setContentsMargins(28, 20, 28, 24)
-        layout.setSpacing(14)
+        layout.setSpacing(16)
 
         top = QHBoxLayout()
-        title = QLabel("Xodimlar va Huquqlar Boshqaruvi (RBAC)", page)
+        th_b = QVBoxLayout()
+        title = QLabel("Xodimlar va Huquqlar Boshqaruvi (RBAC)", inner)
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f172a;")
-        top.addWidget(title)
+        th_b.addWidget(title)
+
+        is_super = (self.user_data.get("role") == "SUPER_ADMIN")
+        sub_t = QLabel(
+            "Super-Admin boshqaruvi: 2 ta Super-Admin, 4 ta Oddiy Admin va navbatchi operatorlar" if is_super
+            else "Faqat ko'rish rejimi (Oddiy Adminlar xodim qo'sha yoki tahrirlay olmaydi)", inner
+        )
+        sub_t.setStyleSheet("font-size: 12px; color: #64748b; font-weight: 600;")
+        th_b.addWidget(sub_t)
+        top.addLayout(th_b)
         top.addStretch()
 
-        btn_add = QPushButton("+ Yangi Xodim Qo'shish", page)
-        btn_add.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_add.setStyleSheet("""
-            QPushButton {
-                background-color: #0d9488;
-                color: white;
-                font-size: 13px;
-                font-weight: 700;
-                padding: 10px 18px;
-                border-radius: 8px;
-                border: none;
-            }
-            QPushButton:hover { background-color: #0f766e; }
-        """)
-        btn_add.clicked.connect(self.add_staff_dialog)
-        top.addWidget(btn_add)
+        if is_super:
+            btn_add = QPushButton("+ Yangi Xodim Qo'shish", inner)
+            btn_add.setIcon(get_icon("plus.svg"))
+            btn_add.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_add.setStyleSheet("""
+                QPushButton {
+                    background-color: #0d9488;
+                    color: white;
+                    font-size: 13px;
+                    font-weight: 700;
+                    padding: 10px 18px;
+                    border-radius: 8px;
+                    border: none;
+                }
+                QPushButton:hover { background-color: #0f766e; }
+            """)
+            btn_add.clicked.connect(self.add_staff_dialog)
+            top.addWidget(btn_add)
+
         layout.addLayout(top)
 
-        card = QFrame(page)
+        # 1. Xodimlar jadvali
+        card = QFrame(inner)
         card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
         apply_card_shadow(card)
         c_layout = QVBoxLayout(card)
 
         self.table_staff = QTableWidget(card)
         self.table_staff.setColumnCount(6)
-        self.table_staff.setHorizontalHeaderLabels(["ID", "F.I.SH", "LOGIN", "ROLI", "SMENA", "AMALLAR"])
+        self.table_staff.setHorizontalHeaderLabels(["ID", "F.I.SH", "LOGIN", "ROLI", "SMENA / HUDUD", "AMALLAR"])
         self.table_staff.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table_staff.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table_staff.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
@@ -1695,9 +2005,64 @@ class MainWindow(QMainWindow):
         self.table_staff.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
         self.table_staff.setColumnWidth(5, 200)
         self.table_staff.verticalHeader().setVisible(False)
+        self.table_staff.setMinimumHeight(240)
         c_layout.addWidget(self.table_staff)
-
         layout.addWidget(card)
+
+        # 2. Huquqlar Matritsasi Karti (Permissions Matrix)
+        matrix_card = QFrame(inner)
+        matrix_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
+        apply_card_shadow(matrix_card)
+        mc_box = QVBoxLayout(matrix_card)
+        mc_box.setSpacing(10)
+
+        mch = QHBoxLayout()
+        mc_icon = QLabel(matrix_card)
+        mc_icon.setPixmap(get_icon("shield.svg").pixmap(18, 18))
+        mch.addWidget(mc_icon)
+        mc_t = QLabel("Tizim Huquqlari Matritsasi (Permissions Matrix)", matrix_card)
+        mc_t.setStyleSheet("font-size: 14.5px; font-weight: 800; color: #0f172a;")
+        mch.addWidget(mc_t)
+        mch.addStretch()
+        mc_box.addLayout(mch)
+
+        matrix_table = QTableWidget(matrix_card)
+        matrix_table.setColumnCount(4)
+        matrix_table.setHorizontalHeaderLabels(["ROL", "MIQDORI", "MAS'ULIYAT SOHASI", "RUXSATLAR VA HUQUQLAR (PERMISSIONS)"])
+        matrix_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        matrix_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        matrix_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        matrix_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        matrix_table.verticalHeader().setVisible(False)
+        matrix_table.setRowCount(3)
+        matrix_table.setMinimumHeight(160)
+
+        # Super-Admin qatori
+        matrix_table.setCellWidget(0, 0, create_role_badge("SUPER_ADMIN"))
+        matrix_table.setItem(0, 1, QTableWidgetItem("2 kishi"))
+        matrix_table.setItem(0, 2, QTableWidgetItem("Tizimning to'liq arxitekturasi, uskunalar va xodimlar boshqaruvi"))
+        matrix_table.setItem(0, 3, QTableWidgetItem("• Barcha bo'limlarga to'liq kirish va tahrirlash\n• Tizim sozlamalari va tariflarni o'zgartirish\n• Oddiy adminlar akkauntini yaratish va o'chirish\n• Manuel shlagbaum va favqulodda (Emergency) boshqaruv"))
+
+        # Oddiy Admin qatori
+        matrix_table.setCellWidget(1, 0, create_role_badge("ADMIN"))
+        matrix_table.setItem(1, 1, QTableWidgetItem("4 kishi"))
+        matrix_table.setItem(1, 2, QTableWidgetItem("Operatsion jarayon, tushumlarni monitoring qilish, tranzaksiyalar va navbatchilik"))
+        matrix_table.setItem(1, 3, QTableWidgetItem("• Real-vaqt monitoringi va 2D/3D xaritaning joriy holati\n• Moliya tushumlarini ko'rish (tahrirlash va tarif o'zgartirish taqiqlangan)\n• Kameralar statusi va sessiyalarni kuzatish\n• ❌ Tizim sozlamalari va boshqarishga kirish taqiqlangan"))
+
+        # Operator qatori
+        matrix_table.setCellWidget(2, 0, create_role_badge("OPERATOR"))
+        matrix_table.setItem(2, 1, QTableWidgetItem("2 kishi"))
+        matrix_table.setItem(2, 2, QTableWidgetItem("Navbatchilik posti, shlagbaum va kirish-chiqish nazorati"))
+        matrix_table.setItem(2, 3, QTableWidgetItem("• ANPR kamera orqali kirgan transportlarni tasdiqlash\n• Kassa to'lovlarini qabul qilish / kvitansiya berish\n• Favqulodda shlagbaumni qo'lda ochishda sabab kiritish"))
+
+        matrix_table.resizeRowsToContents()
+        mc_box.addWidget(matrix_table)
+        layout.addWidget(matrix_card)
+
+        scroll.setWidget(inner)
+        p_box = QVBoxLayout(page)
+        p_box.setContentsMargins(0, 0, 0, 0)
+        p_box.addWidget(scroll)
         return page
 
     def edit_staff_action(self, staff_user):
@@ -1843,34 +2208,338 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     # --------------------------------------------------------------------------
-    # MODUL 5: BILLING & FINANCE (TARIFLAR, TUSHUMLAR VA VAUCHERLAR)
+    # MODUL 4: MOLIYA VA TRANZAKSIYALAR BO'LIMI
+    # get_financial_summary() — Kunlik, haftalik va oylik tushumlar hisoboti va grafiklar.
+    # get_transaction_history() — Barcha to'lovlar, sessiyalar davomiyligi va to'lov usullari (Naqd/Karta/App) bazasi.
+    # export_financial_report(format) — Moliyaviy hisobotlarni Excel/PDF formatida yuklab olish.
+    # update_tariff_rates(rates) — (Faqat Super-Admin) Soatbay, daqiqabay va tungi tarif narxlarini o'zgartirish.
     # --------------------------------------------------------------------------
     def build_finance_page(self):
         page = QWidget()
-        layout = QVBoxLayout(page)
+        scroll = QScrollArea(page)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        inner = QWidget()
+        layout = QVBoxLayout(inner)
         layout.setContentsMargins(28, 20, 28, 24)
-        layout.setSpacing(14)
+        layout.setSpacing(16)
 
-        title = QLabel("Moliya, Tariflar va To'lovlar Nazorati", page)
+        # 1. TOP HEADER (Sarlavha va Harakat tugmalari)
+        top = QHBoxLayout()
+        th_box = QVBoxLayout()
+        title = QLabel("Moliya va Tranzaksiyalar Nazorati", inner)
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f172a;")
-        layout.addWidget(title)
+        th_box.addWidget(title)
 
-        grid = QGridLayout()
-        grid.setSpacing(16)
+        is_super = (self.user_data.get("role") == "SUPER_ADMIN")
+        role_label = "Super-Admin: To'liq boshqaruv va tarif tahrirlash huquqi" if is_super else "Oddiy Admin: Tushumlar monitoringi va hisobot eksport huquqi (Tarif tahrirlash cheklangan)"
+        sub = QLabel(role_label, inner)
+        sub.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {'#0d9488' if is_super else '#0284c7'};")
+        th_box.addWidget(sub)
+        top.addLayout(th_box)
+        top.addStretch()
 
-        c_pay, self.lbl_pay_val = self._create_stat_card("Payme Tushumi", "0 UZS", "wallet.svg", "Elektron", "#DCFCE7", "#166534")
-        c_clk, self.lbl_clk_val = self._create_stat_card("Click Tushumi", "0 UZS", "wallet.svg", "Elektron", "#E0F2FE", "#0369A1")
+        # Harakat tugmalari: Eksport, Tariflar, Yangilash
+        btn_export = QPushButton("Excel (.csv) Eksport", inner)
+        btn_export.setIcon(get_icon("download.svg"))
+        btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_export.setStyleSheet("""
+            QPushButton {
+                background: #0284c7;
+                color: white;
+                font-weight: 700;
+                font-size: 12.5px;
+                padding: 9px 16px;
+                border-radius: 8px;
+                border: none;
+            }
+            QPushButton:hover { background: #0369a1; }
+        """)
+        btn_export.clicked.connect(self.export_finance_action)
+        top.addWidget(btn_export)
+
+        btn_tariff = QPushButton("Tariflarni Sozlash" + ("" if is_super else " 🔒"), inner)
+        btn_tariff.setIcon(get_icon("settings.svg"))
+        btn_tariff.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_tariff.setStyleSheet("""
+            QPushButton {
+                background: #0d9488;
+                color: white;
+                font-weight: 700;
+                font-size: 12.5px;
+                padding: 9px 16px;
+                border-radius: 8px;
+                border: none;
+            }
+            QPushButton:hover { background: #0f766e; }
+        """)
+        btn_tariff.clicked.connect(self.open_tariffs_dialog)
+        top.addWidget(btn_tariff)
+
+        btn_refresh = QPushButton(inner)
+        btn_refresh.setIcon(get_icon("refresh.svg"))
+        btn_refresh.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_refresh.setToolTip("Moliyaviy ma'lumotlarni yangilash")
+        btn_refresh.setStyleSheet("""
+            QPushButton {
+                background: #f1f5f9;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                padding: 8px 10px;
+            }
+            QPushButton:hover { background: #e2e8f0; }
+        """)
+        btn_refresh.clicked.connect(self.load_finance)
+        top.addWidget(btn_refresh)
+
+        layout.addLayout(top)
+
+        # 2. PERIOD FILTER TABS (Kunlik / Haftalik / Oylik / Barchasi)
+        filter_box = QHBoxLayout()
+        filter_box.setSpacing(8)
+
+        lbl_per = QLabel("Hisobot Davri:", inner)
+        lbl_per.setStyleSheet("font-size: 12.5px; font-weight: 700; color: #475569;")
+        filter_box.addWidget(lbl_per)
+
+        self.btn_per_day = QPushButton("Kunlik (Bugun)", inner)
+        self.btn_per_week = QPushButton("Haftalik (7 kun)", inner)
+        self.btn_per_month = QPushButton("Oylik (30 kun)", inner)
+        self.btn_per_all = QPushButton("Jami Baza", inner)
+
+        self.period_btns = [
+            (self.btn_per_day, "day"),
+            (self.btn_per_week, "week"),
+            (self.btn_per_month, "month"),
+            (self.btn_per_all, "all")
+        ]
+
+        for btn, p_key in self.period_btns:
+            btn.setCheckable(True)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: #ffffff;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 20px;
+                    padding: 5px 14px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #475569;
+                }
+                QPushButton:hover { background: #f8fafc; border-color: #0d9488; color: #0d9488; }
+                QPushButton:checked {
+                    background: #0d9488;
+                    color: #ffffff;
+                    border-color: #0d9488;
+                    font-weight: 700;
+                }
+            """)
+            btn.clicked.connect(lambda ch, pk=p_key: self.set_finance_period(pk))
+            filter_box.addWidget(btn)
+
+        self.btn_per_day.setChecked(True)
+        filter_box.addStretch()
+        layout.addLayout(filter_box)
+
+        # 3. STATISTIKA KARTALARI (KPI CARDS ROW)
+        grid_cards = QGridLayout()
+        grid_cards.setSpacing(14)
+
+        # Karta 1: Bugungi / Davr Jami Tushum (Deep Cyan / Dark Slate Gradient)
+        card_main = QFrame(inner)
+        card_main.setStyleSheet("""
+            QFrame {
+                background: linear-gradient(135deg, #0F172A, #0066FF);
+                border-radius: 16px;
+                padding: 16px;
+            }
+        """)
+        apply_card_shadow(card_main)
+        cm_box = QVBoxLayout(card_main)
+        cm_box.setSpacing(4)
+
+        cm_top = QHBoxLayout()
+        cm_lbl = QLabel("JAMI TUSHUM", card_main)
+        cm_lbl.setStyleSheet("color: rgba(255, 255, 255, 0.7); font-size: 11px; font-weight: 800; letter-spacing: 0.5px;")
+        cm_top.addWidget(cm_lbl)
+        cm_top.addStretch()
+
+        self.lbl_fin_main_trend = QLabel("▲ +14.2% o'sish", card_main)
+        self.lbl_fin_main_trend.setStyleSheet("color: #4ade80; font-size: 10.5px; font-weight: 700; background: rgba(74, 222, 128, 0.15); padding: 2px 8px; border-radius: 12px;")
+        cm_top.addWidget(self.lbl_fin_main_trend)
+        cm_box.addLayout(cm_top)
+
+        self.lbl_fin_main_rev = QLabel("0 UZS", card_main)
+        self.lbl_fin_main_rev.setStyleSheet("color: #ffffff; font-size: 22px; font-weight: 900; margin-top: 2px;")
+        cm_box.addWidget(self.lbl_fin_main_rev)
+
+        self.lbl_fin_main_sub = QLabel("Tranzaksiyalar: 0 ta | O'rtacha: 0 UZS", card_main)
+        self.lbl_fin_main_sub.setStyleSheet("color: rgba(255, 255, 255, 0.75); font-size: 11px;")
+        cm_box.addWidget(self.lbl_fin_main_sub)
+
+        grid_cards.addWidget(card_main, 0, 0)
+
+        # Karta 2: Payme Tushumi
+        c_pay, self.lbl_pay_val = self._create_stat_card("Payme Tushumi", "0 UZS", "wallet.svg", "Elektron / QR", "#DCFCE7", "#166534")
+        grid_cards.addWidget(c_pay, 0, 1)
+
+        # Karta 3: Click Tushumi
+        c_clk, self.lbl_clk_val = self._create_stat_card("Click Tushumi", "0 UZS", "wallet.svg", "Click Up", "#E0F2FE", "#0369A1")
+        grid_cards.addWidget(c_clk, 0, 2)
+
+        # Karta 4: Naqd To'lovlar
         c_csh, self.lbl_csh_val = self._create_stat_card("Naqd To'lovlar", "0 UZS", "wallet.svg", "Kassa", "#FEF3C7", "#92400E")
-        grid.addWidget(c_pay, 0, 0)
-        grid.addWidget(c_clk, 0, 1)
-        grid.addWidget(c_csh, 0, 2)
-        layout.addLayout(grid)
+        grid_cards.addWidget(c_csh, 0, 3)
 
-        # Chegirmalar va Vaucherlar (Coupons) bo'limi
-        coup_card = QFrame(page)
+        # Karta 5: Uzum Bank
+        c_uzm, self.lbl_uzm_val = self._create_stat_card("Uzum Bank", "0 UZS", "wallet.svg", "Uzum Pay", "#F3E8FF", "#6B21A8")
+        grid_cards.addWidget(c_uzm, 0, 4)
+
+        layout.addLayout(grid_cards)
+
+        # 4. CHART & TARIFF RATES (O'RTA QISM)
+        mid_layout = QHBoxLayout()
+        mid_layout.setSpacing(16)
+
+        # Chap: 7 Kunlik Trend Grafigi
+        chart_card = QFrame(inner)
+        chart_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
+        apply_card_shadow(chart_card)
+        ch_box = QVBoxLayout(chart_card)
+        ch_box.setSpacing(8)
+
+        chh = QHBoxLayout()
+        ch_icon = QLabel(chart_card)
+        ch_icon.setPixmap(get_icon("bar_chart.svg").pixmap(18, 18))
+        chh.addWidget(ch_icon)
+        ch_title = QLabel("7 Kunlik Tushumlar Dinamikasi (Trend Grafigi)", chart_card)
+        ch_title.setStyleSheet("font-size: 14.5px; font-weight: 800; color: #0f172a;")
+        chh.addWidget(ch_title)
+        chh.addStretch()
+
+        ch_legend = QLabel("■ Bugungi tushum (Cyan)   ■ O'tgan kunlar (Teal)", chart_card)
+        ch_legend.setStyleSheet("font-size: 11px; color: #64748b; font-weight: 600;")
+        chh.addWidget(ch_legend)
+        ch_box.addLayout(chh)
+
+        self.chart_widget = WeeklyFinanceChartWidget(chart_card)
+        ch_box.addWidget(self.chart_widget)
+        mid_layout.addWidget(chart_card, 65)
+
+        # O'ng: Amaldagi Tariflar va Qoidalar
+        tariff_card = QFrame(inner)
+        tariff_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
+        apply_card_shadow(tariff_card)
+        tb_box = QVBoxLayout(tariff_card)
+        tb_box.setSpacing(10)
+
+        tb_h = QHBoxLayout()
+        tb_icon = QLabel(tariff_card)
+        tb_icon.setPixmap(get_icon("settings.svg").pixmap(18, 18))
+        tb_h.addWidget(tb_icon)
+        tb_t = QLabel("Amaldagi Tarif Parametrlari", tariff_card)
+        tb_t.setStyleSheet("font-size: 14.5px; font-weight: 800; color: #0f172a;")
+        tb_h.addWidget(tb_t)
+        tb_h.addStretch()
+        tb_box.addLayout(tb_h)
+
+        self.tariff_items_layout = QVBoxLayout()
+        self.tariff_items_layout.setSpacing(6)
+        tb_box.addLayout(self.tariff_items_layout)
+        tb_box.addStretch()
+
+        btn_edit_t = QPushButton("Tarif Stavkalarini O'zgartirish" + ("" if is_super else " 🔒"), tariff_card)
+        btn_edit_t.setIcon(get_icon("edit.svg"))
+        btn_edit_t.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_edit_t.setStyleSheet("""
+            QPushButton {
+                background: #f8fafc;
+                border: 1.5px solid #cbd5e1;
+                border-radius: 8px;
+                padding: 9px;
+                color: #0f172a;
+                font-weight: 700;
+                font-size: 12px;
+            }
+            QPushButton:hover { background: #f1f5f9; border-color: #0d9488; color: #0d9488; }
+        """)
+        btn_edit_t.clicked.connect(self.open_tariffs_dialog)
+        tb_box.addWidget(btn_edit_t)
+
+        mid_layout.addWidget(tariff_card, 35)
+        layout.addLayout(mid_layout)
+
+        # 5. TRANZAKSIYALAR JADVALI (DATA TABLE)
+        tx_card = QFrame(inner)
+        tx_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
+        apply_card_shadow(tx_card)
+        tx_box = QVBoxLayout(tx_card)
+        tx_box.setSpacing(12)
+
+        tx_h = QHBoxLayout()
+        txh_t = QLabel("Barcha To'lovlar va Tranzaksiyalar Tarixi", tx_card)
+        txh_t.setStyleSheet("font-size: 15px; font-weight: 800; color: #0f172a;")
+        tx_h.addWidget(txh_t)
+        tx_h.addStretch()
+
+        # Filtrlash elementlari: Qidiruv va Provayder
+        self.in_tx_search = QLineEdit(tx_card)
+        self.in_tx_search.setPlaceholderText("🔍 Avto raqam, TX kodi, fiskal...")
+        self.in_tx_search.setFixedWidth(220)
+        self.in_tx_search.setStyleSheet("""
+            QLineEdit {
+                background: #f8fafc;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            QLineEdit:focus { border-color: #0d9488; background: white; }
+        """)
+        self.in_tx_search.textChanged.connect(self.load_transactions)
+        tx_h.addWidget(self.in_tx_search)
+
+        self.cb_tx_prov = QComboBox(tx_card)
+        self.cb_tx_prov.addItems(["BARCHASI", "Payme", "Click", "Naqd", "Uzum"])
+        self.cb_tx_prov.setStyleSheet("""
+            QComboBox {
+                background: #f8fafc;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                padding: 5px 10px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+        """)
+        self.cb_tx_prov.currentTextChanged.connect(self.load_transactions)
+        tx_h.addWidget(self.cb_tx_prov)
+
+        tx_box.addLayout(tx_h)
+
+        # QTableWidget: 10 ustun
+        self.table_transactions = QTableWidget(tx_card)
+        self.table_transactions.setColumnCount(10)
+        self.table_transactions.setHorizontalHeaderLabels([
+            "ID", "TRANZAKSIYA KODI", "FISKAL BELGI", "SEANS", "AVTO RAQAM",
+            "PROVAYDER", "TO'LOV USULI", "DAVOMIYLIK", "SUMMA", "STATUS"
+        ])
+        self.table_transactions.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.table_transactions.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        self.table_transactions.horizontalHeader().setSectionResizeMode(8, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_transactions.verticalHeader().setVisible(False)
+        self.table_transactions.setMinimumHeight(280)
+        tx_box.addWidget(self.table_transactions)
+
+        layout.addWidget(tx_card)
+
+        # 6. CHEGIRMALAR VA VAUCHERLAR (Kompakt karta)
+        coup_card = QFrame(inner)
         coup_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 16px;")
         apply_card_shadow(coup_card)
         cp_box = QVBoxLayout(coup_card)
+        cp_box.setSpacing(10)
 
         cph = QHBoxLayout()
         cph_t = QLabel("Vaucherlar va Chegirma Promokodlari", coup_card)
@@ -1890,9 +2559,15 @@ class MainWindow(QMainWindow):
         self.table_coupons.setHorizontalHeaderLabels(["KOD", "CHEGIRMA (%)", "AMAL QILISH MUDDATI", "HOLAT"])
         self.table_coupons.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table_coupons.verticalHeader().setVisible(False)
+        self.table_coupons.setMaximumHeight(150)
         cp_box.addWidget(self.table_coupons)
 
         layout.addWidget(coup_card)
+
+        scroll.setWidget(inner)
+        p_box = QVBoxLayout(page)
+        p_box.setContentsMargins(0, 0, 0, 0)
+        p_box.addWidget(scroll)
         return page
 
     def add_coupon_dialog(self):
@@ -2092,18 +2767,27 @@ class MainWindow(QMainWindow):
         return page
 
     def save_tariffs(self):
+        if self.user_data.get("role") != "SUPER_ADMIN":
+            QMessageBox.warning(self, "Ruxsat Taqiqlangan", "Tarif narxlarini faqat Super-Admin o'zgartirishi mumkin!")
+            return
         s = {
             "day_rate": self.in_day.text().strip(),
             "night_rate": self.in_night.text().strip(),
             "grace_period": self.in_grace.text().strip(),
             "daily_cap": self.in_cap.text().strip() if hasattr(self, 'in_cap') else "50000",
-            "ev_rate": self.in_ev_rate.text().strip() if hasattr(self, 'in_ev_rate') else "12000",
+            "ev_rate": self.in_ev_rate.text().strip() if hasattr(self, 'in_ev_rate') else "2500",
         }
-        self.db.save_settings(s)
-        self.db.add_notification("Tariflar yangilandi", "Avtoturargoh stavkalari muvaffaqiyatli saqlandi.", "SUCCESS")
-        QMessageBox.information(self, "Muvaffaqiyat", "Tarif parametrlari muvaffaqiyatli saqlandi!")
+        ok, msg = self.db.update_tariff_rates(s, self.user_data.get("role"))
+        if ok:
+            QMessageBox.information(self, "Muvaffaqiyat", msg)
+            self.load_finance()
+        else:
+            QMessageBox.critical(self, "Xatolik", msg)
 
     def save_hardware_settings(self):
+        if self.user_data.get("role") != "SUPER_ADMIN":
+            QMessageBox.warning(self, "Ruxsat Taqiqlangan", "Uskuna parametrlarini faqat Super-Admin o'zgartirishi mumkin!")
+            return
         s = {
             "barrier_speed": self.in_barrier_speed.text().strip() if hasattr(self, 'in_barrier_speed') else "2.5",
             "mqtt_broker": self.in_mqtt.text().strip() if hasattr(self, 'in_mqtt') else "127.0.0.1:1883",
@@ -2312,11 +2996,165 @@ class MainWindow(QMainWindow):
         self.db.remove_from_access_list(iid)
         self.load_access_list()
 
+    def set_finance_period(self, period):
+        self.finance_period = period
+        if hasattr(self, 'period_btns'):
+            for b, p in self.period_btns:
+                b.setChecked(p == period)
+        self.load_finance()
+
     def load_finance(self):
-        fin = self.db.get_financial_summary()
-        self.lbl_pay_val.setText(f"{fin.get('payme_total', 0):,} UZS".replace(",", " "))
-        self.lbl_clk_val.setText(f"{fin.get('click_total', 0):,} UZS".replace(",", " "))
-        self.lbl_csh_val.setText(f"{fin.get('cash_total', 0):,} UZS".replace(",", " "))
+        period = getattr(self, "finance_period", "day")
+        fin = self.db.get_financial_summary(period=period)
+
+        # 1. Asosiy gradient kartochka
+        cur_rev = fin.get("period_revenue", 0)
+        cur_cnt = fin.get("period_count", 0)
+        avg_chk = fin.get("avg_check", 0)
+
+        if hasattr(self, "lbl_fin_main_rev"):
+            self.lbl_fin_main_rev.setText(f"{cur_rev:,} UZS".replace(",", " "))
+            self.lbl_fin_main_sub.setText(f"Tranzaksiyalar: {cur_cnt} ta  |  O'rtacha chek: {avg_chk:,} UZS".replace(",", " "))
+
+        # 2. Provayderlar
+        if hasattr(self, "lbl_pay_val"):
+            self.lbl_pay_val.setText(f"{fin.get('payme_total', 0):,} UZS".replace(",", " "))
+        if hasattr(self, "lbl_clk_val"):
+            self.lbl_clk_val.setText(f"{fin.get('click_total', 0):,} UZS".replace(",", " "))
+        if hasattr(self, "lbl_csh_val"):
+            self.lbl_csh_val.setText(f"{fin.get('cash_total', 0):,} UZS".replace(",", " "))
+        if hasattr(self, "lbl_uzm_val"):
+            self.lbl_uzm_val.setText(f"{fin.get('uzum_total', 0):,} UZS".replace(",", " "))
+
+        # 3. Bar Chart ma'lumotlari
+        if hasattr(self, "chart_widget"):
+            self.chart_widget.set_data(fin.get("chart_data", []))
+
+        # 4. Amaldagi Tariflar ko'rsatkichi
+        if hasattr(self, "tariff_items_layout"):
+            while self.tariff_items_layout.count():
+                child = self.tariff_items_layout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
+                elif child.layout():
+                    while child.layout().count():
+                        subchild = child.layout().takeAt(0)
+                        if subchild.widget():
+                            subchild.widget().deleteLater()
+
+            settings = self.db.get_settings()
+            t_items = [
+                ("Kunduzgi stavka (08:00 - 20:00):", f"{settings.get('day_rate', '5000')} so'm / soat"),
+                ("Tungi stavka (20:00 - 08:00):", f"{settings.get('night_rate', '3000')} so'm / soat"),
+                ("Daqiqabay tarif stavkasi:", f"{settings.get('minute_rate', '100')} so'm / daqiqa"),
+                ("EV Zaryadlash qo'shimcha:", f"{settings.get('ev_rate', '2500')} so'm / soat"),
+                ("Dastlabki bepul oraliq:", f"{settings.get('grace_period', '15')} daqiqa"),
+                ("Kunlik maksimal to'lov (cap):", f"{settings.get('daily_cap', '50000')} so'm"),
+            ]
+            for label_t, val_t in t_items:
+                row = QHBoxLayout()
+                lbl = QLabel(label_t)
+                lbl.setStyleSheet("color: #64748b; font-size: 11.5px; font-weight: 600;")
+                val = QLabel(f"<b>{val_t}</b>")
+                val.setStyleSheet("color: #0f172a; font-size: 12px;")
+                row.addWidget(lbl)
+                row.addStretch()
+                row.addWidget(val)
+                self.tariff_items_layout.addLayout(row)
+
+        # 5. Tranzaksiyalar jadvalini yuklash
+        self.load_transactions()
+
+    def load_transactions(self):
+        if not hasattr(self, "table_transactions"):
+            return
+
+        search = self.in_tx_search.text().strip() if hasattr(self, "in_tx_search") else ""
+        prov = self.cb_tx_prov.currentText() if hasattr(self, "cb_tx_prov") else "BARCHASI"
+        period = getattr(self, "finance_period", "all")
+
+        txs = self.db.get_transaction_history(search=search, provider=prov, period=period, limit=100)
+        self.table_transactions.setRowCount(len(txs))
+
+        for r, tx in enumerate(txs):
+            self.table_transactions.setItem(r, 0, QTableWidgetItem(str(tx.get("id", ""))))
+            self.table_transactions.setItem(r, 1, QTableWidgetItem(tx.get("tx_code", "")))
+            
+            fisc_item = QTableWidgetItem(tx.get("fiscal_sign", ""))
+            fisc_item.setForeground(QColor("#0369a1"))
+            self.table_transactions.setItem(r, 2, fisc_item)
+
+            self.table_transactions.setItem(r, 3, QTableWidgetItem(tx.get("session_code", "")))
+            self.table_transactions.setCellWidget(r, 4, create_plate_badge(tx.get("vehicle_plate", "")))
+
+            prov_name = tx.get("provider", "")
+            prov_item = QTableWidgetItem(prov_name)
+            if prov_name == "Payme":
+                prov_item.setForeground(QColor("#0d9488"))
+            elif prov_name == "Click":
+                prov_item.setForeground(QColor("#0284c7"))
+            elif prov_name == "Naqd":
+                prov_item.setForeground(QColor("#d97706"))
+            elif prov_name == "Uzum":
+                prov_item.setForeground(QColor("#7c3aed"))
+            self.table_transactions.setItem(r, 5, prov_item)
+
+            self.table_transactions.setItem(r, 6, QTableWidgetItem(tx.get("payment_method", prov_name)))
+
+            dur_item = QTableWidgetItem(f"⏱ {tx.get('duration', '01:00:00')}")
+            dur_item.setForeground(QColor("#475569"))
+            self.table_transactions.setItem(r, 7, dur_item)
+
+            amt = tx.get("amount", 0)
+            amt_item = QTableWidgetItem(f"{amt:,} UZS".replace(",", " "))
+            amt_item.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
+            amt_item.setForeground(QColor("#166534"))
+            self.table_transactions.setItem(r, 8, amt_item)
+
+            self.table_transactions.setCellWidget(r, 9, create_status_badge(tx.get("status", "SUCCESS")))
+
+    def export_finance_action(self):
+        default_dir = os.path.join(CURRENT_DIR, "exports")
+        os.makedirs(default_dir, exist_ok=True)
+        def_file = os.path.join(default_dir, f"Parkly_Moliyaviy_Hisobot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+
+        selected_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Moliyaviy Hisobotni Eksport Qilish (Excel / CSV)",
+            def_file,
+            "CSV Fayli (*.csv);;Barcha fayllar (*.*)"
+        )
+        if selected_path:
+            ok, res = self.db.export_financial_report(export_format="csv", filepath=selected_path)
+            if ok:
+                QMessageBox.information(
+                    self,
+                    "Eksport Muvaffaqiyatli",
+                    f"Moliyaviy hisobot muvaffaqiyatli saqlandi:<br><br>"
+                    f"<b>{os.path.basename(res)}</b><br>"
+                    f"<small>{res}</small><br><br>"
+                    f"<i>Excel'da bevosita ochish uchun UTF-8-BOM va ';' ajratuvchisida tayyorlandi.</i>"
+                )
+            else:
+                QMessageBox.critical(self, "Eksport Xatoligi", f"Faylni saqlashda xatolik: {res}")
+
+    def open_tariffs_dialog(self):
+        role = self.user_data.get("role", "ADMIN")
+        if role != "SUPER_ADMIN":
+            QMessageBox.warning(
+                self,
+                "Ruxsat Taqiqlangan (Faqat Super-Admin)",
+                "<b>❌ Ruxsat yo'q!</b><br><br>"
+                "Tizim Huquqlar Matritsasiga muvofiq, tarif narxlarini faqat <b>Super-Admin</b> (2 kishi) "
+                "o'zgartirishi mumkin.<br><br>"
+                "<i>Oddiy Adminlarga faqat amaldagi tariflarni va moliyaviy tushumlarni monitoring qilish huquqi berilgan.</i>"
+            )
+            return
+
+        dlg = TariffRatesDialog(self.db, role, self)
+        if dlg.exec():
+            self.load_finance()
+            self.load_settings()
 
     def load_coupons(self):
         cps = self.db.get_coupons()
@@ -2330,14 +3168,17 @@ class MainWindow(QMainWindow):
     def load_staff(self):
         st = self.db.get_all_staff()
         self.table_staff.setRowCount(len(st))
+        is_super = (self.user_data.get("role") == "SUPER_ADMIN")
+
         for r, s in enumerate(st):
             self.table_staff.setItem(r, 0, QTableWidgetItem(str(s["id"])))
             self.table_staff.setItem(r, 1, QTableWidgetItem(s["full_name"]))
             self.table_staff.setItem(r, 2, QTableWidgetItem(s["username"]))
-            self.table_staff.setItem(r, 3, QTableWidgetItem(s["role"]))
+            # 3-ustun: Roli badge
+            self.table_staff.setCellWidget(r, 3, create_role_badge(s["role"]))
             self.table_staff.setItem(r, 4, QTableWidgetItem(s["shift"]))
 
-            # 5-ustun: AMALLAR (Tahrirlash va O'chirish)
+            # 5-ustun: AMALLAR (Faqat Super-Admin uchun to'liq faol)
             act_w = QWidget()
             act_l = QHBoxLayout(act_w)
             act_l.setContentsMargins(4, 2, 4, 2)
@@ -2345,6 +3186,7 @@ class MainWindow(QMainWindow):
 
             btn_edit = QPushButton("Tahrirlash")
             btn_edit.setIcon(get_icon("edit.svg"))
+            btn_edit.setEnabled(is_super)
             btn_edit.setStyleSheet("""
                 QPushButton {
                     background: #f1f5f9;
@@ -2356,6 +3198,7 @@ class MainWindow(QMainWindow):
                     font-size: 11px;
                 }
                 QPushButton:hover { background: #e2e8f0; }
+                QPushButton:disabled { color: #94a3b8; background: #f8fafc; border-color: #e2e8f0; }
             """)
             btn_edit.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_edit.clicked.connect(lambda ch, s_item=s: self.edit_staff_action(s_item))
@@ -2363,6 +3206,8 @@ class MainWindow(QMainWindow):
 
             btn_del = QPushButton("O'chirish")
             btn_del.setIcon(get_icon("trash.svg"))
+            can_delete = is_super and (s["username"] != "admin")
+            btn_del.setEnabled(can_delete)
             btn_del.setStyleSheet("""
                 QPushButton {
                     background: #fee2e2;
@@ -2374,6 +3219,7 @@ class MainWindow(QMainWindow):
                     font-size: 11px;
                 }
                 QPushButton:hover { background: #fecaca; }
+                QPushButton:disabled { color: #cbd5e1; background: #f8fafc; border-color: #e2e8f0; }
             """)
             btn_del.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_del.clicked.connect(lambda ch, sid=s["id"], sname=s["full_name"], suser=s["username"]: self.delete_staff_action(sid, sname, suser))
