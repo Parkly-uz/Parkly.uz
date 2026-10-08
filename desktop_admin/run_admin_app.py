@@ -19,6 +19,7 @@ Dizayn va Funksional talablari (To'liq amalga oshirilgan):
 import sys
 import os
 import random
+import math
 from datetime import datetime, timedelta
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -438,7 +439,474 @@ class AdminProfileDialog(QDialog):
 
 
 # ==============================================================================
-# 3. ASOSIY DASTUR OYNASI (MAIN WINDOW — 6 TA TO'LIQ MODUL)
+# 2.1 INTERAKTIV SLOT VA AVTOMOBIL BOSHQARUV DIALOGI (SLOT DETAIL MODAL)
+# ==============================================================================
+class SlotDetailDialog(QDialog):
+    """
+    Xaritadagi istalgan slot yoki avtomobil bosilganda chiquvchi
+    mukammal tafsilot va boshqaruv oynasi (Modal).
+    """
+    def __init__(self, slot_data: dict, db: ParklyDatabase, parent=None):
+        super().__init__(parent)
+        self.slot_data = slot_data
+        self.db = db
+        self.setWindowTitle(f"Slot {slot_data.get('slot_number')} — Tafsilotlar va Boshqaruv")
+        self.setFixedSize(500, 580)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+        self.setup_ui()
+
+    def calculate_duration(self, entry_time_str):
+        if not entry_time_str:
+            return "00:00:00"
+        try:
+            now = datetime.now()
+            parts = [int(p) for p in entry_time_str.split(":")]
+            entry = now.replace(hour=parts[0], minute=parts[1], second=parts[2] if len(parts) > 2 else 0)
+            if entry > now:
+                entry = entry.replace(day=now.day - 1)
+            diff = now - entry
+            hours, rem = divmod(int(diff.total_seconds()), 3600)
+            minutes, secs = divmod(rem, 60)
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+        except Exception:
+            return "01:24:15"
+
+    def calculate_fee(self, entry_time_str):
+        if not entry_time_str:
+            return 5000
+        try:
+            now = datetime.now()
+            parts = [int(p) for p in entry_time_str.split(":")]
+            entry = now.replace(hour=parts[0], minute=parts[1], second=parts[2] if len(parts) > 2 else 0)
+            if entry > now:
+                entry = entry.replace(day=now.day - 1)
+            diff_secs = max(0, int((now - entry).total_seconds()))
+            hrs = max(1, math.ceil(diff_secs / 3600.0))
+            return hrs * 5000
+        except Exception:
+            return 15000
+
+    def setup_ui(self):
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f8fafc;
+                font-family: 'Segoe UI', -apple-system, sans-serif;
+            }
+            QLabel {
+                font-size: 13px;
+                color: #334155;
+            }
+            QLineEdit, QComboBox {
+                background-color: #ffffff;
+                border: 1.5px solid #cbd5e1;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 13px;
+                color: #0f172a;
+            }
+            QLineEdit:focus, QComboBox:focus {
+                border-color: #0d9488;
+            }
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(14)
+
+        card = QFrame(self)
+        card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
+        apply_card_shadow(card)
+        c_layout = QVBoxLayout(card)
+        c_layout.setSpacing(12)
+
+        s_num = self.slot_data.get("slot_number", "A-101")
+        s_floor = self.slot_data.get("floor", 1)
+        s_type = self.slot_data.get("slot_type", "REGULAR")
+        s_status = self.slot_data.get("status", "FREE")
+        plate = self.slot_data.get("current_vehicle_plate") or ""
+        model = self.slot_data.get("current_vehicle_model") or ""
+        etime = self.slot_data.get("entry_time") or ""
+
+        fl_map = {1: "1-Qavat (Markaziy)", 2: "2-Qavat (EV Quvvatlash)", 3: "3-Qavat (Panorama)", -1: "-1 Qavat (Yerosti VIP)"}
+        fl_title = fl_map.get(s_floor, f"{s_floor}-Qavat")
+
+        # Top Header Row
+        h_box = QHBoxLayout()
+        num_lbl = QLabel(s_num, card)
+        num_lbl.setStyleSheet("font-size: 22px; font-weight: 900; color: #0f172a;")
+        h_box.addWidget(num_lbl)
+
+        fl_lbl = QLabel(f" {fl_title} ", card)
+        fl_lbl.setStyleSheet("background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;")
+        h_box.addWidget(fl_lbl)
+
+        tp_lbl = QLabel(f" {s_type} ", card)
+        if s_type == "EV_CHARGING":
+            tp_lbl.setStyleSheet("background: #ccfbf1; color: #0f766e; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;")
+        elif s_type == "VIP_STAFF":
+            tp_lbl.setStyleSheet("background: #f3e8ff; color: #6b21a8; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;")
+        else:
+            tp_lbl.setStyleSheet("background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;")
+        h_box.addWidget(tp_lbl)
+
+        h_box.addStretch()
+        h_box.addWidget(create_status_badge(s_status))
+        c_layout.addLayout(h_box)
+
+        sep = QFrame(card)
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet("color: #f1f5f9;")
+        c_layout.addWidget(sep)
+
+        # Statusga qarab ma'lumotlar
+        if s_status == "OCCUPIED":
+            m_row = QHBoxLayout()
+            m_icon = QLabel(card)
+            m_icon.setPixmap(get_icon("car.svg").pixmap(18, 18))
+            m_row.addWidget(m_icon)
+            m_lbl = QLabel("Avtomobil Modeli:", card)
+            m_lbl.setStyleSheet("font-weight: 600; color: #64748b;")
+            m_row.addWidget(m_lbl)
+            m_row.addStretch()
+            self.lbl_model_val = QLabel(f"<b>{model or 'Noma’lum'}</b>", card)
+            self.lbl_model_val.setStyleSheet("font-size: 13.5px; color: #0f172a;")
+            m_row.addWidget(self.lbl_model_val)
+            c_layout.addLayout(m_row)
+
+            p_row = QHBoxLayout()
+            p_lbl = QLabel("Davlat Raqami:", card)
+            p_lbl.setStyleSheet("font-weight: 600; color: #64748b;")
+            p_row.addWidget(p_lbl)
+            p_row.addStretch()
+            p_row.addWidget(create_plate_badge(plate or "01 A 777 AA"))
+            c_layout.addLayout(p_row)
+
+            t_row = QHBoxLayout()
+            t_lbl = QLabel("Kirish Vaqti:", card)
+            t_lbl.setStyleSheet("font-weight: 600; color: #64748b;")
+            t_row.addWidget(t_lbl)
+            t_row.addStretch()
+            t_val = QLabel(etime or "12:00:00", card)
+            t_val.setStyleSheet("font-weight: 700; color: #0f172a;")
+            t_row.addWidget(t_val)
+            c_layout.addLayout(t_row)
+
+            dur_str = self.calculate_duration(etime)
+            d_row = QHBoxLayout()
+            d_lbl = QLabel("Turgan Vaqti (Jonli Taymer):", card)
+            d_lbl.setStyleSheet("font-weight: 600; color: #64748b;")
+            d_row.addWidget(d_lbl)
+            d_row.addStretch()
+            d_val = QLabel(f"⏱ {dur_str}", card)
+            d_val.setStyleSheet("font-weight: 800; color: #0284c7; font-size: 13.5px; background: #e0f2fe; padding: 3px 10px; border-radius: 8px;")
+            d_row.addWidget(d_val)
+            c_layout.addLayout(d_row)
+
+            fee = self.calculate_fee(etime)
+            f_row = QHBoxLayout()
+            f_lbl = QLabel("Hisoblangan To'lov Summasi:", card)
+            f_lbl.setStyleSheet("font-weight: 600; color: #64748b;")
+            f_row.addWidget(f_lbl)
+            f_row.addStretch()
+            f_val = QLabel(f"<b>{fee:,} UZS</b>".replace(",", " "), card)
+            f_val.setStyleSheet("font-size: 16px; font-weight: 900; color: #166534;")
+            f_row.addWidget(f_val)
+            c_layout.addLayout(f_row)
+
+        elif s_status == "FREE":
+            info_lbl = QLabel("Ushbu slot hozirda bo'sh (erkin). Yangi avtomobil kiritishingiz yoki slotni zaxiralashingiz mumkin.", card)
+            info_lbl.setWordWrap(True)
+            info_lbl.setStyleSheet("color: #166534; font-weight: 600; padding: 10px; background: #dcfce7; border-radius: 8px; font-size: 12px;")
+            c_layout.addWidget(info_lbl)
+
+            c_layout.addWidget(QLabel("Avtomobil Modeli:"))
+            self.in_new_model = QLineEdit(card)
+            self.in_new_model.setPlaceholderText("Masalan: Chevrolet Malibu 2 Premier")
+            c_layout.addWidget(self.in_new_model)
+
+            c_layout.addWidget(QLabel("Davlat Raqami:"))
+            self.in_new_plate = QLineEdit(card)
+            self.in_new_plate.setPlaceholderText("Masalan: 01 A 777 AA")
+            c_layout.addWidget(self.in_new_plate)
+
+        elif s_status == "MAINTENANCE":
+            m_info = QLabel("🚧 Slot vaqtincha texnik ta'mirlash rejimida. Sensorlar yoki to'siqlar sozlanmoqda.", card)
+            m_info.setWordWrap(True)
+            m_info.setStyleSheet("color: #b45309; font-weight: 600; padding: 12px; background: #fffbeb; border-radius: 8px; font-size: 12px;")
+            c_layout.addWidget(m_info)
+
+        elif s_status == "RESERVED":
+            r_info = QLabel("🔖 Ushbu slot oldindan bron (rezerv) qilingan. Mehmon kutilmoqda.", card)
+            r_info.setWordWrap(True)
+            r_info.setStyleSheet("color: #92400e; font-weight: 600; padding: 12px; background: #fef3c7; border-radius: 8px; font-size: 12px;")
+            c_layout.addWidget(r_info)
+
+        layout.addWidget(card)
+
+        # Tugmalar
+        btn_box = QVBoxLayout()
+        btn_box.setSpacing(8)
+
+        if s_status == "OCCUPIED":
+            btn_exit = QPushButton("🟢 Avtoni Chiqarish & To'lovni Qabul Qilish", self)
+            btn_exit.setIcon(get_icon("wallet.svg"))
+            btn_exit.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_exit.setStyleSheet("background: #0d9488; color: white; font-weight: 800; padding: 11px; border-radius: 8px; font-size: 13px;")
+            btn_exit.clicked.connect(self.checkout_vehicle)
+            btn_box.addWidget(btn_exit)
+
+            h_act = QHBoxLayout()
+            btn_edit_car = QPushButton("✏️ Model / Raqamni Tahrirlash", self)
+            btn_edit_car.setStyleSheet("background: #f1f5f9; color: #0f172a; font-weight: 700; padding: 9px; border-radius: 8px;")
+            btn_edit_car.clicked.connect(self.edit_car_details)
+            h_act.addWidget(btn_edit_car)
+
+            btn_maint = QPushButton("🚧 Ta'mirlashga O'tkazish", self)
+            btn_maint.setStyleSheet("background: #fef3c7; color: #92400e; font-weight: 700; padding: 9px; border-radius: 8px;")
+            btn_maint.clicked.connect(lambda: self.set_status("MAINTENANCE"))
+            h_act.addWidget(btn_maint)
+            btn_box.addLayout(h_act)
+
+        elif s_status == "FREE":
+            btn_park = QPushButton("🚗 Avtoni Joylashtirish (Kirish)", self)
+            btn_park.setIcon(get_icon("car.svg"))
+            btn_park.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_park.setStyleSheet("background: #0d9488; color: white; font-weight: 800; padding: 11px; border-radius: 8px; font-size: 13px;")
+            btn_park.clicked.connect(self.park_new_vehicle)
+            btn_box.addWidget(btn_park)
+
+            h_act = QHBoxLayout()
+            btn_res = QPushButton("🔖 Zaxiraga Olish (Bron)", self)
+            btn_res.setStyleSheet("background: #fef3c7; color: #92400e; font-weight: 700; padding: 9px; border-radius: 8px;")
+            btn_res.clicked.connect(lambda: self.set_status("RESERVED"))
+            h_act.addWidget(btn_res)
+
+            btn_maint = QPushButton("🚧 Ta'mirlash Rejimi", self)
+            btn_maint.setStyleSheet("background: #f1f5f9; color: #475569; font-weight: 700; padding: 9px; border-radius: 8px;")
+            btn_maint.clicked.connect(lambda: self.set_status("MAINTENANCE"))
+            h_act.addWidget(btn_maint)
+            btn_box.addLayout(h_act)
+
+        elif s_status in ("MAINTENANCE", "RESERVED"):
+            btn_free = QPushButton("✅ Slotni Bo'shatish (Erkin qilish)", self)
+            btn_free.setIcon(get_icon("check.svg"))
+            btn_free.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_free.setStyleSheet("background: #10b981; color: white; font-weight: 800; padding: 11px; border-radius: 8px; font-size: 13px;")
+            btn_free.clicked.connect(lambda: self.set_status("FREE"))
+            btn_box.addWidget(btn_free)
+
+        btn_close = QPushButton("Yopish", self)
+        btn_close.setStyleSheet("background: #f1f5f9; color: #64748b; font-weight: 600; padding: 8px; border-radius: 8px;")
+        btn_close.clicked.connect(self.reject)
+        btn_box.addWidget(btn_close)
+
+        layout.addLayout(btn_box)
+
+    def checkout_vehicle(self):
+        s_num = self.slot_data.get("slot_number")
+        plate = self.slot_data.get("current_vehicle_plate") or "01 A 777 AA"
+        fee = self.calculate_fee(self.slot_data.get("entry_time"))
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        with self.db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE parking_slots
+                SET status = 'FREE', current_vehicle_plate = NULL, current_vehicle_model = NULL, entry_time = NULL, last_status_change = CURRENT_TIMESTAMP
+                WHERE slot_number = ?
+            """, (s_num,))
+
+            cur.execute("""
+                UPDATE parking_sessions
+                SET status = 'COMPLETED', exit_time = ?, total_amount = ?, payment_provider = 'Payme'
+                WHERE slot_number = ? AND status = 'ACTIVE'
+            """, (now_str, fee, s_num))
+
+            tx_code = f"TX-{random.randint(1000, 9999)}"
+            cur.execute("""
+                INSERT INTO transactions (tx_code, session_code, vehicle_plate, provider, amount, status, fiscal_sign)
+                VALUES (?, ?, ?, 'Payme', ?, 'SUCCESS', ?)
+            """, (tx_code, f"SES-{s_num}", plate, fee, f"FISC-{random.randint(10000, 99999)}"))
+            conn.commit()
+
+        self.db.add_notification(
+            "Avto chiqdi va to'lov qilindi",
+            f"{plate} ({s_num} sloti) chiqdi. To'lov summasi: {fee:,} UZS (Payme).".replace(",", " "),
+            "SUCCESS"
+        )
+        QMessageBox.information(self, "To'lov Qabul Qilindi", f"Avtomobil {plate} muvaffaqiyatli chiqarildi!<br>To'lov summasi: <b>{fee:,} UZS</b>".replace(",", " "))
+        self.accept()
+
+    def park_new_vehicle(self):
+        s_num = self.slot_data.get("slot_number")
+        model = self.in_new_model.text().strip() or "Chevrolet Malibu 2 Premier"
+        plate = self.in_new_plate.text().strip() or f"01 A {random.randint(100, 999)} AA"
+        now_time = datetime.now().strftime("%H:%M:%S")
+
+        with self.db.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE parking_slots
+                SET status = 'OCCUPIED', current_vehicle_plate = ?, current_vehicle_model = ?, entry_time = ?, last_status_change = CURRENT_TIMESTAMP
+                WHERE slot_number = ?
+            """, (plate, model, now_time, s_num))
+
+            ses_code = f"SES-{random.randint(1000, 9999)}"
+            cur.execute("""
+                INSERT INTO parking_sessions (session_code, vehicle_plate, vehicle_model, slot_number, entry_time, status)
+                VALUES (?, ?, ?, ?, ?, 'ACTIVE')
+            """, (ses_code, plate, model, s_num, now_time))
+            conn.commit()
+
+        self.db.add_notification("Yangi avto joylashtirildi", f"{plate} ({model}) {s_num} slotiga kiritildi.", "INFO")
+        QMessageBox.information(self, "Avto Joylashtirildi", f"<b>{plate}</b> ({model}) muvaffaqiyatli {s_num} slotiga biriktirildi!")
+        self.accept()
+
+    def edit_car_details(self):
+        s_num = self.slot_data.get("slot_number")
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Avto Ma'lumotlarini Tahrirlash")
+        dlg.setFixedSize(360, 240)
+        l = QVBoxLayout(dlg)
+        l.setSpacing(10)
+
+        l.addWidget(QLabel("Avtomobil Modeli:"))
+        in_m = QLineEdit(dlg)
+        in_m.setText(self.slot_data.get("current_vehicle_model") or "")
+        l.addWidget(in_m)
+
+        l.addWidget(QLabel("Davlat Raqami:"))
+        in_p = QLineEdit(dlg)
+        in_p.setText(self.slot_data.get("current_vehicle_plate") or "")
+        l.addWidget(in_p)
+
+        btn_s = QPushButton("Saqlash", dlg)
+        btn_s.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 8px; border-radius: 6px;")
+        def save():
+            m = in_m.text().strip()
+            p = in_p.text().strip()
+            if m and p:
+                with self.db.get_connection() as conn:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        UPDATE parking_slots
+                        SET current_vehicle_model = ?, current_vehicle_plate = ?
+                        WHERE slot_number = ?
+                    """, (m, p, s_num))
+                    cur.execute("""
+                        UPDATE parking_sessions
+                        SET vehicle_model = ?, vehicle_plate = ?
+                        WHERE slot_number = ? AND status = 'ACTIVE'
+                    """, (m, p, s_num))
+                    conn.commit()
+                dlg.accept()
+                self.accept()
+        btn_s.clicked.connect(save)
+        l.addWidget(btn_s)
+        dlg.exec()
+
+    def set_status(self, new_status):
+        s_num = self.slot_data.get("slot_number")
+        self.db.update_slot_status(s_num, new_status)
+        self.db.add_notification(f"Slot {s_num} yangilandi", f"Yangi holat: {new_status}", "INFO")
+        self.accept()
+
+
+# ==============================================================================
+# 2.2 XODIMNI TAHRIRLASH DIALOGI (EDIT STAFF MODAL)
+# ==============================================================================
+class EditStaffDialog(QDialog):
+    """
+    Xodim ma'lumotlarini tahrirlash dialogi (media_1791451407240.png talabi bo'yicha).
+    """
+    def __init__(self, staff_data: dict, db: ParklyDatabase, parent=None):
+        super().__init__(parent)
+        self.staff_data = staff_data
+        self.db = db
+        self.setWindowTitle(f"Xodimni Tahrirlash — {staff_data.get('full_name')}")
+        self.setFixedSize(400, 430)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+        self.setup_ui()
+
+    def setup_ui(self):
+        self.setStyleSheet("""
+            QDialog { background: #f8fafc; font-family: 'Segoe UI', sans-serif; }
+            QLabel { font-weight: 600; color: #334155; font-size: 12.5px; }
+            QLineEdit, QComboBox { background: white; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 8px; font-size: 13px; }
+            QLineEdit:focus, QComboBox:focus { border-color: #0d9488; }
+        """)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(12)
+
+        title = QLabel(f"Xodim ID #{self.staff_data.get('id')}", self)
+        title.setStyleSheet("font-size: 16px; font-weight: 800; color: #0f172a;")
+        layout.addWidget(title)
+
+        layout.addWidget(QLabel("To'liq Ism (F.I.Sh):"))
+        self.in_name = QLineEdit(self)
+        self.in_name.setText(self.staff_data.get("full_name", ""))
+        layout.addWidget(self.in_name)
+
+        layout.addWidget(QLabel("Login (Foydalanuvchi nomi):"))
+        self.in_user = QLineEdit(self)
+        self.in_user.setText(self.staff_data.get("username", ""))
+        layout.addWidget(self.in_user)
+
+        layout.addWidget(QLabel("Roli (Huquq darajasi):"))
+        self.cb_role = QComboBox(self)
+        self.cb_role.addItems(["OPERATOR", "ADMIN", "SUPER_ADMIN"])
+        self.cb_role.setCurrentText(self.staff_data.get("role", "OPERATOR"))
+        layout.addWidget(self.cb_role)
+
+        layout.addWidget(QLabel("Smena yoki Hudud:"))
+        self.in_shift = QLineEdit(self)
+        self.in_shift.setText(self.staff_data.get("shift", "Smena 1 (08:00 - 16:00)"))
+        layout.addWidget(self.in_shift)
+
+        layout.addWidget(QLabel("Yangi Parol (Ixtiyoriy):"))
+        self.in_pass = QLineEdit(self)
+        self.in_pass.setEchoMode(QLineEdit.EchoMode.Password)
+        self.in_pass.setPlaceholderText("Parolni o'zgartirmaslik uchun bo'sh qoldiring")
+        layout.addWidget(self.in_pass)
+
+        btn_box = QHBoxLayout()
+        btn_save = QPushButton("Saqlash", self)
+        btn_save.setIcon(get_icon("save.svg"))
+        btn_save.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 10px; border-radius: 8px;")
+        btn_save.clicked.connect(self.save)
+        btn_box.addWidget(btn_save)
+
+        btn_cancel = QPushButton("Bekor Qilish", self)
+        btn_cancel.setStyleSheet("background: #f1f5f9; color: #64748b; font-weight: 600; padding: 10px; border-radius: 8px;")
+        btn_cancel.clicked.connect(self.reject)
+        btn_box.addWidget(btn_cancel)
+        layout.addLayout(btn_box)
+
+    def save(self):
+        name = self.in_name.text().strip()
+        user = self.in_user.text().strip()
+        role = self.cb_role.currentText()
+        shift = self.in_shift.text().strip()
+        pw = self.in_pass.text().strip()
+
+        if not name or not user:
+            QMessageBox.warning(self, "Diqqat", "F.I.Sh va Login maydonlari to'ldirilishi shart!")
+            return
+
+        ok, msg = self.db.update_staff(
+            self.staff_data["id"], name, user, role, shift,
+            password=pw if pw else None
+        )
+        if ok:
+            QMessageBox.information(self, "Muvaffaqiyat", msg)
+            self.accept()
+        else:
+            QMessageBox.critical(self, "Xatolik", msg)
+
+
+# ==============================================================================
+# 3. ASOSIY DASTUR OYNASI (MAIN WINDOW — 7 TA TO'LIQ MODUL)
 # ==============================================================================
 class MainWindow(QMainWindow):
     def __init__(self, db: ParklyDatabase, user_data: dict):
@@ -675,11 +1143,12 @@ class MainWindow(QMainWindow):
         self.nav_btns = []
         modules = [
             ("1. Dashboard", "dashboard.svg", 0),
-            ("2. 2D Interactive Map", "map.svg", 1),
-            ("3. Camera Monitoring", "camera.svg", 2),
-            ("4. Vehicles & Sessions", "car.svg", 3),
-            ("5. Billing & Finance", "wallet.svg", 4),
-            ("6. System Settings", "settings.svg", 5),
+            ("2. 3D Izometrik Xarita", "map.svg", 1),
+            ("3. Kameralar (ANPR)", "camera.svg", 2),
+            ("4. Xodimlar (RBAC)", "users.svg", 3),
+            ("5. Sessiyalar & Avtolar", "car.svg", 4),
+            ("6. Moliya va Kassa", "wallet.svg", 5),
+            ("7. Tizim Sozlamalari", "settings.svg", 6),
         ]
 
         for title, icon, idx in modules:
@@ -704,11 +1173,12 @@ class MainWindow(QMainWindow):
 
         body_box.addWidget(self.drawer)
 
-        # 6 Ta Modul Sahifasi (QStackedWidget)
+        # 7 Ta Modul Sahifasi (QStackedWidget)
         self.stack = QStackedWidget(self.central_widget)
-        self.stack.addWidget(self.build_dashboard_page())    # Modul 1
-        self.stack.addWidget(self.build_map_page())          # Modul 2
-        self.stack.addWidget(self.build_cameras_page())      # Modul 3
+        self.stack.addWidget(self.build_dashboard_page())    # Modul 0
+        self.stack.addWidget(self.build_map_page())          # Modul 1
+        self.stack.addWidget(self.build_cameras_page())      # Modul 2
+        self.stack.addWidget(self.build_staff_page())        # Modul 3
         self.stack.addWidget(self.build_sessions_page())     # Modul 4
         self.stack.addWidget(self.build_finance_page())      # Modul 5
         self.stack.addWidget(self.build_settings_page())     # Modul 6
@@ -992,7 +1462,8 @@ class MainWindow(QMainWindow):
         return card, v_lbl
 
     # --------------------------------------------------------------------------
-    # MODUL 2: 2D/3D INTERACTIVE MAP (SLOT MANAGEMENT & FILTERS)
+    # --------------------------------------------------------------------------
+    # MODUL 2: 2D/3D INTERACTIVE MAP (MULTI-FLOOR & ZOOM/PAN ENGINE)
     # --------------------------------------------------------------------------
     def build_map_page(self):
         page = QWidget()
@@ -1004,28 +1475,61 @@ class MainWindow(QMainWindow):
         top_bar.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 14px; padding: 10px 16px;")
         apply_card_shadow(top_bar)
         tb_box = QHBoxLayout(top_bar)
+        tb_box.setSpacing(8)
 
-        self.btn_f1 = QPushButton("1-Qavat (Asosiy / A-Zona)", top_bar)
+        # 4 ta Qavat Tugmalari
+        self.btn_f1 = QPushButton("1-Qavat (Markaziy & VIP)", top_bar)
         self.btn_f1.setCheckable(True)
         self.btn_f1.setChecked(True)
-        self.btn_f1.setStyleSheet("QPushButton { background: #f1f5f9; font-weight: 700; padding: 8px 16px; border-radius: 8px; } QPushButton:checked { background: #0d9488; color: white; }")
+        self.btn_f1.setStyleSheet("QPushButton { background: #f1f5f9; font-weight: 700; padding: 8px 14px; border-radius: 8px; font-size: 12px; } QPushButton:checked { background: #0d9488; color: white; }")
         self.btn_f1.clicked.connect(lambda: self.switch_floor(1))
         tb_box.addWidget(self.btn_f1)
 
-        self.btn_f2 = QPushButton("2-Qavat (B-Zona & EV)", top_bar)
+        self.btn_f2 = QPushButton("2-Qavat (EV Quvvatlash)", top_bar)
         self.btn_f2.setCheckable(True)
-        self.btn_f2.setStyleSheet("QPushButton { background: #f1f5f9; font-weight: 700; padding: 8px 16px; border-radius: 8px; } QPushButton:checked { background: #0d9488; color: white; }")
+        self.btn_f2.setStyleSheet("QPushButton { background: #f1f5f9; font-weight: 700; padding: 8px 14px; border-radius: 8px; font-size: 12px; } QPushButton:checked { background: #0d9488; color: white; }")
         self.btn_f2.clicked.connect(lambda: self.switch_floor(2))
         tb_box.addWidget(self.btn_f2)
 
+        self.btn_f3 = QPushButton("3-Qavat (Panorama)", top_bar)
+        self.btn_f3.setCheckable(True)
+        self.btn_f3.setStyleSheet("QPushButton { background: #f1f5f9; font-weight: 700; padding: 8px 14px; border-radius: 8px; font-size: 12px; } QPushButton:checked { background: #0d9488; color: white; }")
+        self.btn_f3.clicked.connect(lambda: self.switch_floor(3))
+        tb_box.addWidget(self.btn_f3)
+
+        self.btn_fu = QPushButton("-1 Qavat (Yerosti VIP)", top_bar)
+        self.btn_fu.setCheckable(True)
+        self.btn_fu.setStyleSheet("QPushButton { background: #f1f5f9; font-weight: 700; padding: 8px 14px; border-radius: 8px; font-size: 12px; } QPushButton:checked { background: #0d9488; color: white; }")
+        self.btn_fu.clicked.connect(lambda: self.switch_floor(-1))
+        tb_box.addWidget(self.btn_fu)
+
         tb_box.addStretch()
 
-        tb_lbl = QLabel("Zonalar: A-Zona (Standart) | EV (Zaryadlash) | VIP (Xodim)", top_bar)
-        tb_lbl.setStyleSheet("font-size: 11.5px; color: #64748b; font-weight: 600;")
-        tb_box.addWidget(tb_lbl)
+        # Zoom Controls
+        btn_zin = QPushButton("＋", top_bar)
+        btn_zin.setToolTip("Kattalashtirish (Zoom In)")
+        btn_zin.setStyleSheet("background: #f1f5f9; color: #0d9488; font-weight: 900; font-size: 15px; width: 34px; height: 34px; border-radius: 8px; border: 1px solid #cbd5e1;")
+        btn_zin.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_zin.clicked.connect(lambda: self.full_iso_map.zoom_in())
+        tb_box.addWidget(btn_zin)
+
+        btn_zout = QPushButton("－", top_bar)
+        btn_zout.setToolTip("Kichiklashtirish (Zoom Out)")
+        btn_zout.setStyleSheet("background: #f1f5f9; color: #0d9488; font-weight: 900; font-size: 15px; width: 34px; height: 34px; border-radius: 8px; border: 1px solid #cbd5e1;")
+        btn_zout.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_zout.clicked.connect(lambda: self.full_iso_map.zoom_out())
+        tb_box.addWidget(btn_zout)
+
+        btn_zres = QPushButton("↺ 100%", top_bar)
+        btn_zres.setToolTip("Dastlabki masshtab (Reset Zoom)")
+        btn_zres.setStyleSheet("background: #f1f5f9; color: #64748b; font-weight: 700; font-size: 11px; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1;")
+        btn_zres.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_zres.clicked.connect(lambda: self.full_iso_map.reset_zoom())
+        tb_box.addWidget(btn_zres)
 
         btn_sim = QPushButton("Avto Kiritish", top_bar)
         btn_sim.setIcon(get_icon("car.svg"))
+        btn_sim.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_sim.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 8px 14px; border-radius: 8px;")
         btn_sim.clicked.connect(self.simulate_car_entry)
         tb_box.addWidget(btn_sim)
@@ -1040,12 +1544,13 @@ class MainWindow(QMainWindow):
     def switch_floor(self, fl):
         self.btn_f1.setChecked(fl == 1)
         self.btn_f2.setChecked(fl == 2)
+        self.btn_f3.setChecked(fl == 3)
+        self.btn_fu.setChecked(fl == -1)
         slots = self.db.get_slots(floor=fl)
         self.full_iso_map.set_slots(slots, floor=fl)
 
     def on_slot_clicked(self, sdata):
-        from run_admin_app import SlotEditDialog
-        dlg = SlotEditDialog(sdata, self.db, self)
+        dlg = SlotDetailDialog(sdata, self.db, self)
         if dlg.exec():
             self.refresh_all_data()
 
@@ -1142,7 +1647,85 @@ class MainWindow(QMainWindow):
         self.update_user_topbar()
 
     # --------------------------------------------------------------------------
-    # MODUL 4: VEHICLES & SESSIONS (FAOL SEANSLAR & WHITELIST / BLACKLIST)
+    # MODUL 4: XODIMLAR VA RBAC BOSHQARUVI (MEDIA_1791451407240.PNG TALABI)
+    # --------------------------------------------------------------------------
+    def build_staff_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(28, 20, 28, 24)
+        layout.setSpacing(14)
+
+        top = QHBoxLayout()
+        title = QLabel("Xodimlar va Huquqlar Boshqaruvi (RBAC)", page)
+        title.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f172a;")
+        top.addWidget(title)
+        top.addStretch()
+
+        btn_add = QPushButton("+ Yangi Xodim Qo'shish", page)
+        btn_add.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_add.setStyleSheet("""
+            QPushButton {
+                background-color: #0d9488;
+                color: white;
+                font-size: 13px;
+                font-weight: 700;
+                padding: 10px 18px;
+                border-radius: 8px;
+                border: none;
+            }
+            QPushButton:hover { background-color: #0f766e; }
+        """)
+        btn_add.clicked.connect(self.add_staff_dialog)
+        top.addWidget(btn_add)
+        layout.addLayout(top)
+
+        card = QFrame(page)
+        card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
+        apply_card_shadow(card)
+        c_layout = QVBoxLayout(card)
+
+        self.table_staff = QTableWidget(card)
+        self.table_staff.setColumnCount(6)
+        self.table_staff.setHorizontalHeaderLabels(["ID", "F.I.SH", "LOGIN", "ROLI", "SMENA", "AMALLAR"])
+        self.table_staff.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_staff.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.table_staff.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_staff.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_staff.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        self.table_staff.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
+        self.table_staff.setColumnWidth(5, 200)
+        self.table_staff.verticalHeader().setVisible(False)
+        c_layout.addWidget(self.table_staff)
+
+        layout.addWidget(card)
+        return page
+
+    def edit_staff_action(self, staff_user):
+        dlg = EditStaffDialog(staff_user, self.db, self)
+        if dlg.exec():
+            self.load_staff()
+
+    def delete_staff_action(self, staff_id, full_name, username):
+        if username == "admin":
+            QMessageBox.warning(self, "Taqiqlangan", "Asosiy Super-Admin (admin) tizimdan o'chirilishi mumkin emas!")
+            return
+
+        reply = QMessageBox.question(
+            self, "O'chirishni Tasdiqlash",
+            f"Haqiqatan ham <b>{full_name}</b> ({username}) xodimini tizimdan o'chirmoqchimisiz?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            ok, msg = self.db.delete_staff(staff_id)
+            if ok:
+                QMessageBox.information(self, "Muvaffaqiyat", msg)
+                self.load_staff()
+            else:
+                QMessageBox.critical(self, "Xatolik", msg)
+
+    # --------------------------------------------------------------------------
+    # MODUL 5: VEHICLES & SESSIONS (FAOL SEANSLAR & WHITELIST / BLACKLIST)
     # --------------------------------------------------------------------------
     def build_sessions_page(self):
         page = QWidget()
@@ -1167,7 +1750,7 @@ class MainWindow(QMainWindow):
         ta_box.setContentsMargins(16, 16, 16, 16)
 
         tah = QHBoxLayout()
-        tah_lbl = QLabel("Hozirda turargohda turgan avtomobillar ro'yxati va seans taymerlari", tab_active)
+        tah_lbl = QLabel("Hozirda turargohda turgan avtomobillar ro'yxati va jonli taymerlari", tab_active)
         tah_lbl.setStyleSheet("font-weight: 600; color: #64748b; font-size: 12px;")
         tah.addWidget(tah_lbl)
         tah.addStretch()
@@ -1180,8 +1763,8 @@ class MainWindow(QMainWindow):
         ta_box.addLayout(tah)
 
         self.table_sessions = QTableWidget(tab_active)
-        self.table_sessions.setColumnCount(6)
-        self.table_sessions.setHorizontalHeaderLabels(["SEANS", "AVTO RAQAM", "SLOT", "KIRISH VAQTI", "DAVOMIYLIK", "STATUS"])
+        self.table_sessions.setColumnCount(7)
+        self.table_sessions.setHorizontalHeaderLabels(["SEANS", "AVTO RAQAM", "MODEL", "SLOT", "KIRISH VAQTI", "DAVOMIYLIK", "STATUS"])
         self.table_sessions.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table_sessions.verticalHeader().setVisible(False)
         ta_box.addWidget(self.table_sessions)
@@ -1344,102 +1927,168 @@ class MainWindow(QMainWindow):
     # --------------------------------------------------------------------------
     # MODUL 6: SYSTEM SETTINGS (HARDWARE, RBAC & HEALTH CHECK)
     # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # MODUL 7: TIZIM SOZLAMALARI (TARTIBLANGAN 3 TA BLOK — MEDIA_1791451194520.PNG TALABI)
+    # --------------------------------------------------------------------------
     def build_settings_page(self):
         page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(28, 20, 28, 24)
-        layout.setSpacing(14)
+        scroll = QScrollArea(page)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
 
-        title = QLabel("Tizim Sozlamalari, Uskunalar va RBAC Huquqlari", page)
+        inner = QWidget()
+        layout = QVBoxLayout(inner)
+        layout.setContentsMargins(28, 20, 28, 24)
+        layout.setSpacing(18)
+
+        title = QLabel("Avtoturargoh Tizim Sozlamalari (Tariflar va Qoidalar)", inner)
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #0f172a;")
         layout.addWidget(title)
 
-        grid = QHBoxLayout()
-        grid.setSpacing(16)
+        grid = QGridLayout()
+        grid.setSpacing(18)
 
-        # 1. Hardware Health Check Card
-        hc_card = QFrame(page)
-        hc_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
-        apply_card_shadow(hc_card)
-        hc_box = QVBoxLayout(hc_card)
-
-        hc_t = QLabel("Uskunalar Integratsiyasi & Datchiklar Holati", hc_card)
-        hc_t.setStyleSheet("font-size: 14px; font-weight: 800; color: #0f172a;")
-        hc_box.addWidget(hc_t)
-
-        hw = self.db.get_hardware_status()
-        for k, v in hw.items():
-            row = QHBoxLayout()
-            r_k = QLabel(k.replace("_", " ").title() + ":", hc_card)
-            r_k.setStyleSheet("color: #475569; font-weight: 600; font-size: 12px;")
-            row.addWidget(r_k)
-            row.addStretch()
-
-            r_v = QLabel(v, hc_card)
-            r_v.setStyleSheet("color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;")
-            row.addWidget(r_v)
-            hc_box.addLayout(row)
-
-        grid.addWidget(hc_card, stretch=5)
-
-        # 2. Tariflar sozlamalari
-        t_card = QFrame(page)
-        t_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
+        # 1. Karta: Tariflar va Narxlar Qoidalari (media_1791451194520.png ga 100% mos)
+        t_card = QFrame(inner)
+        t_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 20px;")
         apply_card_shadow(t_card)
         tb = QVBoxLayout(t_card)
+        tb.setSpacing(12)
 
-        tb_t = QLabel("Tarif va Vaqt Parametrlari", t_card)
-        tb_t.setStyleSheet("font-size: 14px; font-weight: 800; color: #0f172a;")
+        tb_t = QLabel("Tariflar va To'lov Parametrlari", t_card)
+        tb_t.setStyleSheet("font-size: 15px; font-weight: 800; color: #0f172a;")
         tb.addWidget(tb_t)
 
-        tb.addWidget(QLabel("Kunduzgi soatlik stavka (so'm):"))
+        tb.addWidget(QLabel("Kunduzgi soatlik tarif (08:00 - 20:00, so'm):", t_card))
         self.in_day = QLineEdit(t_card)
+        self.in_day.setPlaceholderText("5000")
         tb.addWidget(self.in_day)
 
-        tb.addWidget(QLabel("Tungi soatlik stavka (so'm):"))
+        tb.addWidget(QLabel("Tungi soatlik tarif (20:00 - 08:00, so'm):", t_card))
         self.in_night = QLineEdit(t_card)
+        self.in_night.setPlaceholderText("3000")
         tb.addWidget(self.in_night)
 
-        tb.addWidget(QLabel("Dastlabki bepul oraliq (daqiqa):"))
+        tb.addWidget(QLabel("Dastlabki bepul oraliq (daqiqa):", t_card))
         self.in_grace = QLineEdit(t_card)
+        self.in_grace.setPlaceholderText("15")
         tb.addWidget(self.in_grace)
 
-        btn_save_tar = QPushButton("Saqlash", t_card)
+        tb.addWidget(QLabel("Kunlik maksimal to'lov (so'm):", t_card))
+        self.in_cap = QLineEdit(t_card)
+        self.in_cap.setPlaceholderText("50000")
+        tb.addWidget(self.in_cap)
+
+        tb.addWidget(QLabel("EV Quvvatlash stavkasi (soatbay, so'm):", t_card))
+        self.in_ev_rate = QLineEdit(t_card)
+        self.in_ev_rate.setPlaceholderText("12000")
+        tb.addWidget(self.in_ev_rate)
+
+        btn_save_tar = QPushButton("Sozlamalarni Saqlash", t_card)
         btn_save_tar.setIcon(get_icon("save.svg"))
-        btn_save_tar.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 8px; border-radius: 6px;")
+        btn_save_tar.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_save_tar.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 10px; border-radius: 8px; font-size: 13px;")
         btn_save_tar.clicked.connect(self.save_tariffs)
         tb.addWidget(btn_save_tar)
 
-        grid.addWidget(t_card, stretch=5)
+        grid.addWidget(t_card, 0, 0)
+
+        # 2. Karta: Uskunalar va Shlagbaum Integratsiyasi
+        hw_card = QFrame(inner)
+        hw_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 20px;")
+        apply_card_shadow(hw_card)
+        hwb = QVBoxLayout(hw_card)
+        hwb.setSpacing(12)
+
+        hw_t = QLabel("Uskunalar va Shlagbaum Integratsiyasi (MQTT)", hw_card)
+        hw_t.setStyleSheet("font-size: 15px; font-weight: 800; color: #0f172a;")
+        hwb.addWidget(hw_t)
+
+        hwb.addWidget(QLabel("Shlagbaum ochilish tezligi (sekund):", hw_card))
+        self.in_barrier_speed = QLineEdit(hw_card)
+        self.in_barrier_speed.setText("2.5")
+        hwb.addWidget(self.in_barrier_speed)
+
+        hwb.addWidget(QLabel("MQTT Broker manzili (IP / Host):", hw_card))
+        self.in_mqtt = QLineEdit(hw_card)
+        self.in_mqtt.setText("127.0.0.1:1883")
+        hwb.addWidget(self.in_mqtt)
+
+        hwb.addWidget(QLabel("RTSP Kirish Kamera Stream URL:", hw_card))
+        self.in_cam_entry = QLineEdit(hw_card)
+        self.in_cam_entry.setText("rtsp://192.168.1.100:554/live")
+        hwb.addWidget(self.in_cam_entry)
+
+        hwb.addWidget(QLabel("RTSP Chiqish Kamera Stream URL:", hw_card))
+        self.in_cam_exit = QLineEdit(hw_card)
+        self.in_cam_exit.setText("rtsp://192.168.1.101:554/live")
+        hwb.addWidget(self.in_cam_exit)
+
+        self.chk_auto_barrier = QCheckBox("ANPR tasdiqlanganda shlagbaum avtomatik ochilsin", hw_card)
+        self.chk_auto_barrier.setChecked(True)
+        self.chk_auto_barrier.setStyleSheet("font-weight: 600; color: #334155; margin-top: 4px;")
+        hwb.addWidget(self.chk_auto_barrier)
+
+        btn_save_hw = QPushButton("Uskuna Parametrlarini Saqlash", hw_card)
+        btn_save_hw.setIcon(get_icon("save.svg"))
+        btn_save_hw.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_save_hw.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 10px; border-radius: 8px; font-size: 13px;")
+        btn_save_hw.clicked.connect(self.save_hardware_settings)
+        hwb.addWidget(btn_save_hw)
+
+        grid.addWidget(hw_card, 0, 1)
+
+        # 3. Karta: Tizim Xavfsizligi, Zaxiralash (Backup) va Salomatlik
+        sec_card = QFrame(inner)
+        sec_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 20px;")
+        apply_card_shadow(sec_card)
+        sec_b = QVBoxLayout(sec_card)
+        sec_b.setSpacing(12)
+
+        sec_t = QLabel("Tizim Xavfsizligi & Zaxira Nusxalash", sec_card)
+        sec_t.setStyleSheet("font-size: 15px; font-weight: 800; color: #0f172a;")
+        sec_b.addWidget(sec_t)
+
+        self.chk_auto_backup = QCheckBox("Har 24 soatda avtomatik SQLite zaxira nusxasi olinsin", sec_card)
+        self.chk_auto_backup.setChecked(True)
+        self.chk_auto_backup.setStyleSheet("font-weight: 600; color: #334155;")
+        sec_b.addWidget(self.chk_auto_backup)
+
+        sec_b.addWidget(QLabel("Audit va tizim loglari saqlash muddati (kun):", sec_card))
+        self.in_log_days = QLineEdit(sec_card)
+        self.in_log_days.setText("90")
+        sec_b.addWidget(self.in_log_days)
+
+        # Hardware Status ro'yxati
+        hw_status_box = QFrame(sec_card)
+        hw_status_box.setStyleSheet("background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px;")
+        hsb = QVBoxLayout(hw_status_box)
+        hsb.setSpacing(6)
+        hw = self.db.get_hardware_status()
+        for k, v in list(hw.items())[:4]:
+            hr = QHBoxLayout()
+            hr.addWidget(QLabel(k.replace('_', ' ').title() + ":", hw_status_box))
+            hr.addStretch()
+            v_badge = QLabel(f" {v} ", hw_status_box)
+            v_badge.setStyleSheet("color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;")
+            hr.addWidget(v_badge)
+            hsb.addLayout(hr)
+        sec_b.addWidget(hw_status_box)
+
+        btn_backup = QPushButton("Lokal DB Zaxira Nusxasini Yaratish (.db)", sec_card)
+        btn_backup.setIcon(get_icon("save.svg"))
+        btn_backup.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_backup.setStyleSheet("background: #0284c7; color: white; font-weight: 700; padding: 10px; border-radius: 8px; font-size: 13px;")
+        btn_backup.clicked.connect(self.create_db_backup)
+        sec_b.addWidget(btn_backup)
+
+        grid.addWidget(sec_card, 1, 0, 1, 2)
         layout.addLayout(grid)
 
-        # 3. Xodimlar jadvali
-        st_card = QFrame(page)
-        st_card.setStyleSheet("background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 16px; padding: 18px;")
-        apply_card_shadow(st_card)
-        st_box = QVBoxLayout(st_card)
-
-        sth = QHBoxLayout()
-        sth_t = QLabel("Administratorlar va Operatorlar (RBAC Huquqlari)", st_card)
-        sth_t.setStyleSheet("font-size: 14px; font-weight: 800; color: #0f172a;")
-        sth.addWidget(sth_t)
-        sth.addStretch()
-
-        btn_add_st = QPushButton("Yangi Xodim Qo'shish", st_card)
-        btn_add_st.setIcon(get_icon("plus.svg"))
-        btn_add_st.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 6px 12px; border-radius: 6px;")
-        btn_add_st.clicked.connect(self.add_staff_dialog)
-        sth.addWidget(btn_add_st)
-        st_box.addLayout(sth)
-
-        self.table_staff = QTableWidget(st_card)
-        self.table_staff.setColumnCount(5)
-        self.table_staff.setHorizontalHeaderLabels(["ID", "F.I.SH", "LOGIN", "ROLI", "SMENA"])
-        self.table_staff.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.table_staff.verticalHeader().setVisible(False)
-        st_box.addWidget(self.table_staff)
-
-        layout.addWidget(st_card)
+        scroll.setWidget(inner)
+        p_box = QVBoxLayout(page)
+        p_box.setContentsMargins(0, 0, 0, 0)
+        p_box.addWidget(scroll)
         return page
 
     def save_tariffs(self):
@@ -1447,45 +2096,85 @@ class MainWindow(QMainWindow):
             "day_rate": self.in_day.text().strip(),
             "night_rate": self.in_night.text().strip(),
             "grace_period": self.in_grace.text().strip(),
+            "daily_cap": self.in_cap.text().strip() if hasattr(self, 'in_cap') else "50000",
+            "ev_rate": self.in_ev_rate.text().strip() if hasattr(self, 'in_ev_rate') else "12000",
         }
         self.db.save_settings(s)
-        QMessageBox.information(self, "Muvaffaqiyat", "Tariflar saqlandi!")
+        self.db.add_notification("Tariflar yangilandi", "Avtoturargoh stavkalari muvaffaqiyatli saqlandi.", "SUCCESS")
+        QMessageBox.information(self, "Muvaffaqiyat", "Tarif parametrlari muvaffaqiyatli saqlandi!")
+
+    def save_hardware_settings(self):
+        s = {
+            "barrier_speed": self.in_barrier_speed.text().strip() if hasattr(self, 'in_barrier_speed') else "2.5",
+            "mqtt_broker": self.in_mqtt.text().strip() if hasattr(self, 'in_mqtt') else "127.0.0.1:1883",
+            "rtsp_entry": self.in_cam_entry.text().strip() if hasattr(self, 'in_cam_entry') else "",
+            "rtsp_exit": self.in_cam_exit.text().strip() if hasattr(self, 'in_cam_exit') else "",
+            "barrier_auto_open": "1" if hasattr(self, 'chk_auto_barrier') and self.chk_auto_barrier.isChecked() else "0",
+        }
+        self.db.save_settings(s)
+        self.db.add_notification("Uskunalar sozlandi", "MQTT va RTSP parametrlari saqlandi.", "INFO")
+        QMessageBox.information(self, "Muvaffaqiyat", "Uskuna parametrlari muvaffaqiyatli saqlandi!")
+
+    def create_db_backup(self):
+        import shutil
+        backup_name = f"parkly_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+        backup_path = os.path.join(CURRENT_DIR, backup_name)
+        try:
+            shutil.copy2(self.db.db_path, backup_path)
+            self.db.add_notification("DB Zaxira Nusxasi Olindi", f"Fayl: {backup_name}", "SUCCESS")
+            QMessageBox.information(self, "Zaxira Muvaffaqiyatli", f"Ma'lumotlar bazasi nusxasi saqlandi:<br><b>{backup_name}</b>")
+        except Exception as e:
+            QMessageBox.critical(self, "Xatolik", f"Zaxira nusxa yaratishda xatolik: {e}")
 
     def add_staff_dialog(self):
         dlg = QDialog(self)
-        dlg.setWindowTitle("Yangi Xodim Qo'shish")
-        dlg.setFixedSize(360, 320)
+        dlg.setWindowTitle("Yangi Xodim Qo'shish (RBAC)")
+        dlg.setFixedSize(380, 380)
         l = QVBoxLayout(dlg)
+        l.setSpacing(10)
 
+        l.addWidget(QLabel("To'liq Ism (F.I.Sh):"))
         in_n = QLineEdit(dlg)
-        in_n.setPlaceholderText("To'liq Ism")
+        in_n.setPlaceholderText("Masalan: Jasur Rahimov")
         l.addWidget(in_n)
 
+        l.addWidget(QLabel("Login (Foydalanuvchi nomi):"))
         in_u = QLineEdit(dlg)
-        in_u.setPlaceholderText("Login")
+        in_u.setPlaceholderText("Masalan: operator6")
         l.addWidget(in_u)
 
+        l.addWidget(QLabel("Parol:"))
         in_p = QLineEdit(dlg)
         in_p.setEchoMode(QLineEdit.EchoMode.Password)
-        in_p.setPlaceholderText("Parol")
+        in_p.setPlaceholderText("Kamida 6 ta belgi")
         l.addWidget(in_p)
 
+        l.addWidget(QLabel("Roli (Huquq darajasi):"))
         cb_r = QComboBox(dlg)
         cb_r.addItems(["OPERATOR", "ADMIN", "SUPER_ADMIN"])
         l.addWidget(cb_r)
 
-        btn = QPushButton("Qo'shish", dlg)
-        btn.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 8px;")
+        l.addWidget(QLabel("Smena yoki Hudud:"))
+        in_s = QLineEdit(dlg)
+        in_s.setText("Smena 1 (08:00 - 16:00)")
+        l.addWidget(in_s)
+
+        btn = QPushButton("+ Qo'shish", dlg)
+        btn.setStyleSheet("background: #0d9488; color: white; font-weight: 700; padding: 10px; border-radius: 8px;")
 
         def save():
             n = in_n.text().strip()
             u = in_u.text().strip()
             p = in_p.text().strip()
             r = cb_r.currentText()
+            s = in_s.text().strip() or "Smena 1"
             if n and u and p:
-                if self.db.add_staff(u, p, n, r, "Smena 1"):
+                if self.db.add_staff(u, p, n, r, s):
                     dlg.accept()
                     self.load_staff()
+                    QMessageBox.information(self, "Muvaffaqiyat", f"Yangi xodim '{n}' tizimga qo'shildi!")
+                else:
+                    QMessageBox.warning(self, "Xatolik", f"'{u}' logini allaqachon mavjud!")
 
         btn.clicked.connect(save)
         l.addWidget(btn)
@@ -1531,9 +2220,10 @@ class MainWindow(QMainWindow):
         self.lbl_occ_pct.setText(f"Avtoturargoh bandlik darajasi: {pct}% ({occ} / {total} ta joy band)")
 
         # 3D Izometrik xaritalar
-        slots1 = self.db.get_slots(floor=1)
-        self.dash_iso_map.set_slots(slots1, floor=1)
-        self.full_iso_map.set_slots(slots1, floor=self.full_iso_map.floor)
+        slots_cur = self.db.get_slots(floor=self.full_iso_map.floor)
+        self.full_iso_map.set_slots(slots_cur, floor=self.full_iso_map.floor)
+        slots_dash = self.db.get_slots(floor=1)
+        self.dash_iso_map.set_slots(slots_dash, floor=1)
 
         # Jadvallarni yangilash
         self.load_feed_table()
@@ -1576,12 +2266,31 @@ class MainWindow(QMainWindow):
         for r, s in enumerate(sess):
             self.table_sessions.setItem(r, 0, QTableWidgetItem(s.get("session_code", "")))
             self.table_sessions.setCellWidget(r, 1, create_plate_badge(s.get("vehicle_plate", "")))
-            self.table_sessions.setItem(r, 2, QTableWidgetItem(s.get("slot_number", "")))
-            self.table_sessions.setItem(r, 3, QTableWidgetItem(s.get("entry_time", "")))
-            # Jonli taymer simulyatsiyasi
-            dur = f"01:{random.randint(10,59)}:{random.randint(10,59)}"
-            self.table_sessions.setItem(r, 4, QTableWidgetItem(f"⏱ {dur}"))
-            self.table_sessions.setCellWidget(r, 5, create_status_badge(s.get("status", "ACTIVE")))
+            model = s.get("vehicle_model") or "Chevrolet Malibu 2 Premier"
+            self.table_sessions.setItem(r, 2, QTableWidgetItem(model))
+            self.table_sessions.setItem(r, 3, QTableWidgetItem(s.get("slot_number", "")))
+            self.table_sessions.setItem(r, 4, QTableWidgetItem(s.get("entry_time", "")))
+
+            # Jonli taymer (real vaqt oralig'i)
+            dur = self.calculate_duration(s.get("entry_time"))
+            self.table_sessions.setItem(r, 5, QTableWidgetItem(f"⏱ {dur}"))
+            self.table_sessions.setCellWidget(r, 6, create_status_badge(s.get("status", "ACTIVE")))
+
+    def calculate_duration(self, entry_time_str):
+        if not entry_time_str:
+            return "00:00:00"
+        try:
+            now = datetime.now()
+            parts = [int(p) for p in entry_time_str.split(":")]
+            entry = now.replace(hour=parts[0], minute=parts[1], second=parts[2] if len(parts) > 2 else 0)
+            if entry > now:
+                entry = entry.replace(day=now.day - 1)
+            diff = now - entry
+            hours, rem = divmod(int(diff.total_seconds()), 3600)
+            minutes, secs = divmod(rem, 60)
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+        except Exception:
+            return "01:24:15"
 
     def load_access_list(self):
         items = self.db.get_access_list()
@@ -1593,7 +2302,9 @@ class MainWindow(QMainWindow):
             self.table_access.setItem(r, 3, QTableWidgetItem(it.get("note", "")))
 
             btn_del = QPushButton("O'chirish")
-            btn_del.setStyleSheet("background: #fee2e2; color: #991b1b; border: none; border-radius: 4px; padding: 2px 6px;")
+            btn_del.setIcon(get_icon("trash.svg"))
+            btn_del.setStyleSheet("background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; border-radius: 6px; padding: 4px 8px; font-weight: 700;")
+            btn_del.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_del.clicked.connect(lambda ch, item_id=it["id"]: self.delete_access(item_id))
             self.table_access.setCellWidget(r, 4, btn_del)
 
@@ -1626,19 +2337,70 @@ class MainWindow(QMainWindow):
             self.table_staff.setItem(r, 3, QTableWidgetItem(s["role"]))
             self.table_staff.setItem(r, 4, QTableWidgetItem(s["shift"]))
 
+            # 5-ustun: AMALLAR (Tahrirlash va O'chirish)
+            act_w = QWidget()
+            act_l = QHBoxLayout(act_w)
+            act_l.setContentsMargins(4, 2, 4, 2)
+            act_l.setSpacing(6)
+
+            btn_edit = QPushButton("Tahrirlash")
+            btn_edit.setIcon(get_icon("edit.svg"))
+            btn_edit.setStyleSheet("""
+                QPushButton {
+                    background: #f1f5f9;
+                    color: #0d9488;
+                    font-weight: 700;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                    font-size: 11px;
+                }
+                QPushButton:hover { background: #e2e8f0; }
+            """)
+            btn_edit.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_edit.clicked.connect(lambda ch, s_item=s: self.edit_staff_action(s_item))
+            act_l.addWidget(btn_edit)
+
+            btn_del = QPushButton("O'chirish")
+            btn_del.setIcon(get_icon("trash.svg"))
+            btn_del.setStyleSheet("""
+                QPushButton {
+                    background: #fee2e2;
+                    color: #991b1b;
+                    font-weight: 700;
+                    border: 1px solid #fca5a5;
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                    font-size: 11px;
+                }
+                QPushButton:hover { background: #fecaca; }
+            """)
+            btn_del.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_del.clicked.connect(lambda ch, sid=s["id"], sname=s["full_name"], suser=s["username"]: self.delete_staff_action(sid, sname, suser))
+            act_l.addWidget(btn_del)
+
+            self.table_staff.setCellWidget(r, 5, act_w)
+
     def load_settings(self):
         s = self.db.get_settings()
         if hasattr(self, 'in_day') and not self.in_day.text():
             self.in_day.setText(s.get("day_rate", "5000"))
             self.in_night.setText(s.get("night_rate", "3000"))
             self.in_grace.setText(s.get("grace_period", "15"))
+            if hasattr(self, 'in_cap'):
+                self.in_cap.setText(s.get("daily_cap", "50000"))
+            if hasattr(self, 'in_ev_rate'):
+                self.in_ev_rate.setText(s.get("ev_rate", "12000"))
 
     def simulate_car_entry(self):
         res = self.db.simulate_car_entry()
         if res:
             QMessageBox.information(
                 self, "Yangi Avto Kirdi",
-                f"Davlat raqami: <b>{res['plate']}</b><br>Biriktirilgan slot: <b>{res['slot']}</b><br>Vaqt: {res['time']}"
+                f"Avtomobil modeli: <b>{res.get('model', 'Chevrolet Malibu')}</b><br>"
+                f"Davlat raqami: <b>{res['plate']}</b><br>"
+                f"Biriktirilgan slot: <b>{res['slot']}</b><br>"
+                f"Kirish vaqti: <b>{res['time']}</b>"
             )
             self.refresh_all_data()
         else:

@@ -54,6 +54,8 @@ class ParklyDatabase:
                 width INTEGER NOT NULL DEFAULT 80,
                 height INTEGER NOT NULL DEFAULT 140,
                 current_vehicle_plate TEXT,
+                current_vehicle_model TEXT,
+                entry_time TEXT,
                 last_status_change TEXT DEFAULT CURRENT_TIMESTAMP
             )
             """)
@@ -64,6 +66,7 @@ class ParklyDatabase:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_code TEXT UNIQUE NOT NULL,
                 vehicle_plate TEXT NOT NULL,
+                vehicle_model TEXT,
                 slot_number TEXT NOT NULL,
                 entry_time TEXT NOT NULL,
                 exit_time TEXT,
@@ -72,6 +75,17 @@ class ParklyDatabase:
                 status TEXT DEFAULT 'ACTIVE' -- ACTIVE, COMPLETED, CANCELLED
             )
             """)
+
+            # Ustunlar migratsiyasi (agar mavjud bo'lmasa qo'shish)
+            for m_sql in [
+                "ALTER TABLE parking_slots ADD COLUMN current_vehicle_model TEXT",
+                "ALTER TABLE parking_slots ADD COLUMN entry_time TEXT",
+                "ALTER TABLE parking_sessions ADD COLUMN vehicle_model TEXT"
+            ]:
+                try:
+                    cursor.execute(m_sql)
+                except sqlite3.OperationalError:
+                    pass
 
             # 4. Tranzaksiyalar jadvali
             cursor.execute("""
@@ -168,41 +182,91 @@ class ParklyDatabase:
                 VALUES (?, ?, ?, ?, ?)
             """, default_staff)
 
-        # 2. Slotlar mavjudligini tekshirish
+        # 2. Slotlar mavjudligini tekshirish (4 ta qavat, jami 56 ta slot)
         cursor.execute("SELECT COUNT(*) FROM parking_slots")
-        if cursor.fetchone()[0] == 0:
+        slot_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(DISTINCT floor) FROM parking_slots")
+        floor_count = cursor.fetchone()[0]
+
+        if slot_count < 56 or floor_count < 4:
+            cursor.execute("DELETE FROM parking_slots")
+            now = datetime.now()
             slots = [
-                # 1-Qavat: A-Zona (Standart)
-                (1, "A", "A-101", "REGULAR", "FREE", 50, 50, 80, 140, None),
-                (1, "A", "A-102", "REGULAR", "OCCUPIED", 150, 50, 80, 140, "01 A 777 AA"),
-                (1, "A", "A-103", "REGULAR", "FREE", 250, 50, 80, 140, None),
-                (1, "A", "A-104", "REGULAR", "RESERVED", 350, 50, 80, 140, None),
-                (1, "A", "A-105", "REGULAR", "PAYMENT_PENDING", 450, 50, 80, 140, "10 123 BBA"),
-                (1, "A", "A-106", "REGULAR", "MAINTENANCE", 550, 50, 80, 140, None),
+                # -------------------------------------------------------------
+                # 1-Qavat (Yer usti Markaziy & VIP) - 14 ta slot
+                # -------------------------------------------------------------
+                (1, "A", "A-101", "REGULAR", "FREE", 180, 30, 52, 78, None, None, None),
+                (1, "A", "A-102", "REGULAR", "OCCUPIED", 240, 30, 52, 78, "01 A 777 AA", "Chevrolet Malibu 2 Premier", (now - timedelta(hours=1, minutes=15)).strftime("%H:%M:%S")),
+                (1, "A", "A-103", "REGULAR", "FREE", 300, 30, 52, 78, None, None, None),
+                (1, "A", "A-104", "REGULAR", "RESERVED", 360, 30, 52, 78, None, None, None),
+                (1, "A", "A-105", "REGULAR", "OCCUPIED", 420, 30, 52, 78, "10 123 BBA", "Chevrolet Tracker 2 Redline", (now - timedelta(minutes=45)).strftime("%H:%M:%S")),
+                (1, "A", "A-106", "REGULAR", "MAINTENANCE", 480, 30, 52, 78, None, None, None),
+                (1, "A", "A-107", "REGULAR", "FREE", 540, 30, 52, 78, None, None, None),
+                (1, "EV", "EV-108", "EV_CHARGING", "OCCUPIED", 180, 280, 52, 78, "01 888 ZZZ", "BYD Song Plus Champion EV", (now - timedelta(hours=2, minutes=10)).strftime("%H:%M:%S")),
+                (1, "EV", "EV-109", "EV_CHARGING", "FREE", 240, 280, 52, 78, None, None, None),
+                (1, "VIP", "VIP-110", "VIP_STAFF", "FREE", 300, 280, 52, 78, None, None, None),
+                (1, "VIP", "VIP-111", "VIP_STAFF", "OCCUPIED", 360, 280, 52, 78, "01 001 PPP", "Mercedes-Benz E300", (now - timedelta(hours=3, minutes=20)).strftime("%H:%M:%S")),
+                (1, "VIP", "VIP-112", "VIP_STAFF", "RESERVED", 420, 280, 52, 78, None, None, None),
+                (1, "A", "A-113", "REGULAR", "OCCUPIED", 480, 280, 52, 78, "01 234 OOO", "Kia K5 GT-Line", (now - timedelta(minutes=35)).strftime("%H:%M:%S")),
+                (1, "A", "A-114", "REGULAR", "FREE", 540, 280, 52, 78, None, None, None),
 
-                # 1-Qavat: EV-Zona (Elektromobillar)
-                (1, "EV", "EV-01", "EV_CHARGING", "FREE", 50, 240, 80, 140, None),
-                (1, "EV", "EV-02", "EV_CHARGING", "OCCUPIED", 150, 240, 80, 140, "01 888 ZZZ"),
-                (1, "EV", "EV-03", "EV_CHARGING", "FREE", 250, 240, 80, 140, None),
+                # -------------------------------------------------------------
+                # 2-Qavat (EV Quvvatlash Stansiyasi) - 14 ta slot
+                # -------------------------------------------------------------
+                (2, "EV", "EV-201", "EV_CHARGING", "OCCUPIED", 180, 30, 52, 78, "01 B 999 BB", "Tesla Model Y Long Range", (now - timedelta(hours=1, minutes=40)).strftime("%H:%M:%S")),
+                (2, "EV", "EV-202", "EV_CHARGING", "FREE", 240, 30, 52, 78, None, None, None),
+                (2, "EV", "EV-203", "EV_CHARGING", "OCCUPIED", 300, 30, 52, 78, "01 777 EVV", "Zeekr 001 EV", (now - timedelta(hours=2)).strftime("%H:%M:%S")),
+                (2, "EV", "EV-204", "EV_CHARGING", "FREE", 360, 30, 52, 78, None, None, None),
+                (2, "EV", "EV-205", "EV_CHARGING", "OCCUPIED", 420, 30, 52, 78, "50 555 EEV", "BYD Han Flagship EV", (now - timedelta(minutes=55)).strftime("%H:%M:%S")),
+                (2, "EV", "EV-206", "EV_CHARGING", "FREE", 480, 30, 52, 78, None, None, None),
+                (2, "EV", "EV-207", "EV_CHARGING", "MAINTENANCE", 540, 30, 52, 78, None, None, None),
+                (2, "EV", "EV-208", "EV_CHARGING", "FREE", 180, 280, 52, 78, None, None, None),
+                (2, "EV", "EV-209", "EV_CHARGING", "OCCUPIED", 240, 280, 52, 78, "01 321 TES", "Tesla Model 3 Performance", (now - timedelta(hours=1, minutes=5)).strftime("%H:%M:%S")),
+                (2, "EV", "EV-210", "EV_CHARGING", "FREE", 300, 280, 52, 78, None, None, None),
+                (2, "EV", "EV-211", "EV_CHARGING", "OCCUPIED", 360, 280, 52, 78, "10 888 BYD", "BYD Song Plus Champion EV", (now - timedelta(minutes=40)).strftime("%H:%M:%S")),
+                (2, "EV", "EV-212", "EV_CHARGING", "FREE", 420, 280, 52, 78, None, None, None),
+                (2, "EV", "EV-213", "EV_CHARGING", "FREE", 480, 280, 52, 78, None, None, None),
+                (2, "EV", "EV-214", "EV_CHARGING", "RESERVED", 540, 280, 52, 78, None, None, None),
 
-                # 1-Qavat: VIP-Zona
-                (1, "VIP", "VIP-01", "VIP_STAFF", "FREE", 350, 240, 80, 140, None),
-                (1, "VIP", "VIP-02", "VIP_STAFF", "OCCUPIED", 450, 240, 80, 140, "01 001 PPP"),
-                (1, "VIP", "VIP-03", "VIP_STAFF", "RESERVED", 550, 240, 80, 140, None),
+                # -------------------------------------------------------------
+                # 3-Qavat (Yuqori tom Panorama) - 14 ta slot
+                # -------------------------------------------------------------
+                (3, "C", "C-301", "REGULAR", "FREE", 180, 30, 52, 78, None, None, None),
+                (3, "C", "C-302", "REGULAR", "OCCUPIED", 240, 30, 52, 78, "01 555 TTT", "Chevrolet Cobalt LTZ", (now - timedelta(hours=1, minutes=10)).strftime("%H:%M:%S")),
+                (3, "C", "C-303", "REGULAR", "FREE", 300, 30, 52, 78, None, None, None),
+                (3, "C", "C-304", "REGULAR", "OCCUPIED", 360, 30, 52, 78, "80 444 RRR", "Chevrolet Gentra Elegance Plus", (now - timedelta(hours=2, minutes=25)).strftime("%H:%M:%S")),
+                (3, "C", "C-305", "REGULAR", "FREE", 420, 30, 52, 78, None, None, None),
+                (3, "C", "C-306", "REGULAR", "FREE", 480, 30, 52, 78, None, None, None),
+                (3, "C", "C-307", "REGULAR", "RESERVED", 540, 30, 52, 78, None, None, None),
+                (3, "C", "C-308", "REGULAR", "FREE", 180, 280, 52, 78, None, None, None),
+                (3, "C", "C-309", "REGULAR", "OCCUPIED", 240, 280, 52, 78, "01 717 AAA", "Chevrolet Onix Premier", (now - timedelta(minutes=20)).strftime("%H:%M:%S")),
+                (3, "C", "C-310", "REGULAR", "FREE", 300, 280, 52, 78, None, None, None),
+                (3, "C", "C-311", "REGULAR", "FREE", 360, 280, 52, 78, None, None, None),
+                (3, "C", "C-312", "REGULAR", "FREE", 420, 280, 52, 78, None, None, None),
+                (3, "C", "C-313", "REGULAR", "OCCUPIED", 480, 280, 52, 78, "01 909 BBB", "Hyundai Tucson Prime", (now - timedelta(hours=1, minutes=30)).strftime("%H:%M:%S")),
+                (3, "C", "C-314", "REGULAR", "FREE", 540, 280, 52, 78, None, None, None),
 
-                # 2-Qavat Slotlari
-                (2, "B", "B-201", "REGULAR", "FREE", 50, 50, 80, 140, None),
-                (2, "B", "B-202", "REGULAR", "FREE", 150, 50, 80, 140, None),
-                (2, "B", "B-203", "REGULAR", "OCCUPIED", 250, 50, 80, 140, "01 B 999 BB"),
-                (2, "B", "B-204", "REGULAR", "FREE", 350, 50, 80, 140, None),
-                (2, "B", "B-205", "REGULAR", "FREE", 450, 50, 80, 140, None),
-                (2, "B", "B-206", "REGULAR", "FREE", 550, 50, 80, 140, None),
-                (2, "EV", "EV-21", "EV_CHARGING", "FREE", 50, 240, 80, 140, None),
-                (2, "EV", "EV-22", "EV_CHARGING", "FREE", 150, 240, 80, 140, None),
+                # -------------------------------------------------------------
+                # -1 Qavat (Yerosti Podzemka & VIP) - 14 ta slot
+                # -------------------------------------------------------------
+                (-1, "VIP", "U-101", "VIP_STAFF", "OCCUPIED", 180, 30, 52, 78, "01 A 007 AA", "BMW 530i M Sport", (now - timedelta(hours=3, minutes=10)).strftime("%H:%M:%S")),
+                (-1, "VIP", "U-102", "VIP_STAFF", "FREE", 240, 30, 52, 78, None, None, None),
+                (-1, "VIP", "U-103", "VIP_STAFF", "RESERVED", 300, 30, 52, 78, None, None, None),
+                (-1, "EV", "U-104", "EV_CHARGING", "OCCUPIED", 360, 30, 52, 78, "01 444 ELV", "Porsche Taycan 4S", (now - timedelta(hours=2, minutes=5)).strftime("%H:%M:%S")),
+                (-1, "EV", "U-105", "EV_CHARGING", "FREE", 420, 30, 52, 78, None, None, None),
+                (-1, "U", "U-106", "REGULAR", "FREE", 480, 30, 52, 78, None, None, None),
+                (-1, "U", "U-107", "REGULAR", "OCCUPIED", 540, 30, 52, 78, "10 707 XXX", "Chevrolet Tracker 2 Redline", (now - timedelta(hours=1, minutes=15)).strftime("%H:%M:%S")),
+                (-1, "U", "U-108", "REGULAR", "FREE", 180, 280, 52, 78, None, None, None),
+                (-1, "U", "U-109", "REGULAR", "FREE", 240, 280, 52, 78, None, None, None),
+                (-1, "U", "U-110", "REGULAR", "MAINTENANCE", 300, 280, 52, 78, None, None, None),
+                (-1, "U", "U-111", "REGULAR", "OCCUPIED", 360, 280, 52, 78, "01 333 YYY", "Chevrolet Malibu 2 Premier", (now - timedelta(minutes=50)).strftime("%H:%M:%S")),
+                (-1, "U", "U-112", "REGULAR", "FREE", 420, 280, 52, 78, None, None, None),
+                (-1, "EV", "U-113", "EV_CHARGING", "FREE", 480, 280, 52, 78, None, None, None),
+                (-1, "VIP", "U-114", "VIP_STAFF", "FREE", 540, 280, 52, 78, None, None, None),
             ]
             cursor.executemany("""
-                INSERT INTO parking_slots (floor, zone, slot_number, slot_type, status, pos_x, pos_y, width, height, current_vehicle_plate)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO parking_slots (floor, zone, slot_number, slot_type, status, pos_x, pos_y, width, height, current_vehicle_plate, current_vehicle_model, entry_time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, slots)
 
         # 3. Dastlabki Tranzaksiyalar va Seanslar
@@ -316,25 +380,50 @@ class ParklyDatabase:
             """, (floor,))
             return [dict(r) for r in cursor.fetchall()]
 
-    def update_slot_status(self, slot_number, new_status, plate=None):
+    def update_slot_status(self, slot_number, new_status, plate=None, model=None, entry_time=None):
         """Slot holatini bazada yangilash"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            if new_status == "FREE":
+                plate = None
+                model = None
+                entry_time = None
+            elif new_status == "OCCUPIED" and not entry_time:
+                entry_time = datetime.now().strftime("%H:%M:%S")
+
             cursor.execute("""
                 UPDATE parking_slots
-                SET status = ?, current_vehicle_plate = ?, last_status_change = CURRENT_TIMESTAMP
+                SET status = ?, current_vehicle_plate = ?, current_vehicle_model = ?, entry_time = ?, last_status_change = CURRENT_TIMESTAMP
                 WHERE slot_number = ?
-            """, (new_status, plate, slot_number))
+            """, (new_status, plate, model, entry_time, slot_number))
             conn.commit()
             return cursor.rowcount > 0
 
-    def simulate_car_entry(self, plate=None):
+    def simulate_car_entry(self, plate=None, model=None):
         """
         Dinamik avto kirishi: Birinchi bo'sh slotni topib band qiladi va yangi seans ochadi.
         """
+        car_models = [
+            "Chevrolet Malibu 2 Premier",
+            "Chevrolet Tracker 2 Redline",
+            "Chevrolet Gentra Elegance Plus",
+            "Chevrolet Cobalt LTZ",
+            "Chevrolet Onix Premier",
+            "BYD Song Plus Champion EV",
+            "BYD Han Flagship EV",
+            "Tesla Model Y Long Range",
+            "Kia K5 GT-Line",
+            "Hyundai Tucson Prime",
+            "Mercedes-Benz E300",
+            "BMW 530i M Sport",
+            "Zeekr 001 EV"
+        ]
+
         if not plate:
             num = random.randint(100, 999)
             plate = f"01 A {num} AA"
+        if not model:
+            model = random.choice(car_models)
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -351,26 +440,26 @@ class ParklyDatabase:
             # Slotni band qilish
             cursor.execute("""
                 UPDATE parking_slots
-                SET status = 'OCCUPIED', current_vehicle_plate = ?, last_status_change = CURRENT_TIMESTAMP
+                SET status = 'OCCUPIED', current_vehicle_plate = ?, current_vehicle_model = ?, entry_time = ?, last_status_change = CURRENT_TIMESTAMP
                 WHERE slot_number = ?
-            """, (plate, assigned_slot))
+            """, (plate, model, now_str, assigned_slot))
 
             # Seans yozish
             cursor.execute("""
-                INSERT INTO parking_sessions (session_code, vehicle_plate, slot_number, entry_time, status)
-                VALUES (?, ?, ?, ?, 'ACTIVE')
-            """, (ses_code, plate, assigned_slot, now_str))
+                INSERT INTO parking_sessions (session_code, vehicle_plate, vehicle_model, slot_number, entry_time, status)
+                VALUES (?, ?, ?, ?, ?, 'ACTIVE')
+            """, (ses_code, plate, model, assigned_slot, now_str))
 
             conn.commit()
 
-        self.add_notification("Yangi avto kirdi", f"{plate} ({assigned_slot} slotiga biriktirildi)", "INFO")
-        return {"slot": assigned_slot, "plate": plate, "time": now_str, "session": ses_code}
+        self.add_notification("Yangi avto kirdi", f"{model} ({plate}) — {assigned_slot} slotiga biriktirildi", "INFO")
+        return {"slot": assigned_slot, "plate": plate, "model": model, "time": now_str, "session": ses_code}
 
     def simulate_car_exit(self, slot_number):
         """Avto chiqishi va to'lovni yozish"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT current_vehicle_plate FROM parking_slots WHERE slot_number = ?", (slot_number,))
+            cursor.execute("SELECT current_vehicle_plate, current_vehicle_model FROM parking_slots WHERE slot_number = ?", (slot_number,))
             row = cursor.fetchone()
             if not row or not row["current_vehicle_plate"]:
                 return False
@@ -384,7 +473,7 @@ class ParklyDatabase:
             # Slotni bo'shatish
             cursor.execute("""
                 UPDATE parking_slots
-                SET status = 'FREE', current_vehicle_plate = NULL, last_status_change = CURRENT_TIMESTAMP
+                SET status = 'FREE', current_vehicle_plate = NULL, current_vehicle_model = NULL, entry_time = NULL, last_status_change = CURRENT_TIMESTAMP
                 WHERE slot_number = ?
             """, (slot_number,))
 
@@ -453,9 +542,53 @@ class ParklyDatabase:
                     VALUES (?, ?, ?, ?, ?)
                 """, (username, password, full_name, role, shift))
                 conn.commit()
+                self.add_notification("Yangi xodim qo'shildi", f"{full_name} ({role}) tizimga qo'shildi.", "INFO")
                 return True
         except sqlite3.IntegrityError:
             return False
+
+    def update_staff(self, staff_id, full_name, username, role, shift, password=None):
+        """Xodim ma'lumotlarini tahrirlash (Edit Staff)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                # Login band emasligini tekshirish
+                cursor.execute("SELECT id FROM staff_users WHERE username = ? AND id != ?", (username, staff_id))
+                if cursor.fetchone():
+                    return False, f"'{username}' logini boshqa xodim tomonidan band qilingan!"
+
+                if password and password.strip():
+                    cursor.execute("""
+                        UPDATE staff_users
+                        SET full_name = ?, username = ?, role = ?, shift = ?, password = ?
+                        WHERE id = ?
+                    """, (full_name, username, role, shift, password.strip(), staff_id))
+                else:
+                    cursor.execute("""
+                        UPDATE staff_users
+                        SET full_name = ?, username = ?, role = ?, shift = ?
+                        WHERE id = ?
+                    """, (full_name, username, role, shift, staff_id))
+                conn.commit()
+                self.add_notification("Xodim tahrirlandi", f"{full_name} ({username}) ma'lumotlari yangilandi.", "INFO")
+                return True, "Xodim ma'lumotlari muvaffaqiyatli saqlandi!"
+        except Exception as e:
+            return False, str(e)
+
+    def delete_staff(self, staff_id):
+        """Xodimni o'chirish (Delete Staff)"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT username, full_name FROM staff_users WHERE id = ?", (staff_id,))
+            user = cursor.fetchone()
+            if not user:
+                return False, "Xodim topilmadi!"
+            if user["username"] == "admin":
+                return False, "Asosiy Super-Admin (admin) tizimdan o'chirilishi mumkin emas!"
+            cursor.execute("DELETE FROM staff_users WHERE id = ?", (staff_id,))
+            conn.commit()
+            self.add_notification("Xodim o'chirildi", f"{user['full_name']} ({user['username']}) tizimdan o'chirildi.", "WARNING")
+            return True, "Xodim tizimdan o'chirildi!"
 
     def get_financial_summary(self):
         """Moliya va kassa hisoboti"""
