@@ -67,6 +67,21 @@ bool DatabaseManager::connectToPostgres(const QString& host, int port, const QSt
     }
 }
 
+bool DatabaseManager::connectToSqlite(const QString& dbPath) {
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(dbPath);
+
+    if (db.open()) {
+        m_connected = true;
+        qDebug() << "Lokal SQLite bazasiga (" << dbPath << ") muvaffaqiyatli ulandi!";
+        return true;
+    } else {
+        qDebug() << "SQLite ulanish xatosi:" << db.lastError().text();
+        m_connected = false;
+        return false;
+    }
+}
+
 bool DatabaseManager::isConnected() const {
     return m_connected;
 }
@@ -116,14 +131,14 @@ QVector<ParkingSlotItem> DatabaseManager::getSlotsByFloor(int floor) {
 bool DatabaseManager::updateSlotStatus(const QString& slotNumber, const QString& newStatus, const QString& plate) {
     if (m_connected) {
         QSqlQuery query;
-        query.prepare("UPDATE parking_slots SET status = :status, current_vehicle_plate = :plate, last_status_change = NOW() "
+        query.prepare("UPDATE parking_slots SET status = :status, current_vehicle_plate = :plate, last_status_change = CURRENT_TIMESTAMP "
                       "WHERE slot_number = :slot");
         query.bindValue(":status", newStatus);
         query.bindValue(":plate", plate.isEmpty() ? QVariant(QMetaType(QMetaType::QString)) : plate);
         query.bindValue(":slot", slotNumber);
 
         if (query.exec()) {
-            qDebug() << "PostgreSQL'da slot muvaffaqiyatli yangilandi:" << slotNumber;
+            qDebug() << "Bazada slot muvaffaqiyatli yangilandi:" << slotNumber;
         } else {
             qDebug() << "SQL xatolik (updateSlotStatus):" << query.lastError().text();
         }

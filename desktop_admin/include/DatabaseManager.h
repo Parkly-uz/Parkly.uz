@@ -42,6 +42,7 @@ public:
 
     bool connectToPostgres(const QString& host, int port, const QString& dbName,
                            const QString& user, const QString& password);
+    bool connectToSqlite(const QString& dbPath = "parkly_local.db");
     bool isConnected() const;
 
     // Slots
