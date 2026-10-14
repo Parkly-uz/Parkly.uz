@@ -540,6 +540,61 @@ class ParklyDatabase:
         self.add_notification("Avto chiqdi", f"{plate} ({slot_number} bo'shatildi, {amount} UZS to'landi)", "SUCCESS")
         return {"plate": plate, "amount": amount, "provider": provider}
 
+    def process_manual_payment(self, slot_number, amount=15000, payment_method="Naqd", operator_name="Operator"):
+        """
+        Avtomatlashtirilmagan / Qo'lda to'lovlarni qabul qilish (Naqd pul yoki POS-terminal)
+        va real-vaqtda sessiyani yopish, slotni bo'shatish hamda kassa tushumini oshirish.
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT current_vehicle_plate, current_vehicle_model, entry_time FROM parking_slots WHERE slot_number = ?", (slot_number,))
+            row = cursor.fetchone()
+            if not row or not row["current_vehicle_plate"]:
+                return {"success": False, "message": f"{slot_number} slotida faol avtomobil topilmadi!"}
+
+            plate = row["current_vehicle_plate"]
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            tx_code = f"TX-MAN-{random.randint(10000, 99999)}"
+            fiscal_sign = f"FISC-MAN-{random.randint(10000, 99999)}"
+
+            # Slotni bo'shatish
+            cursor.execute("""
+                UPDATE parking_slots
+                SET status = 'FREE', current_vehicle_plate = NULL, current_vehicle_model = NULL, entry_time = NULL, last_status_change = CURRENT_TIMESTAMP
+                WHERE slot_number = ?
+            """, (slot_number,))
+
+            # Sessiyani COMPLETED holatiga o'tkazish
+            cursor.execute("""
+                UPDATE parking_sessions
+                SET status = 'COMPLETED', exit_time = ?, payment_status = 'PAID'
+                WHERE vehicle_plate = ? AND status = 'ACTIVE'
+            """, (now_str, plate))
+
+            # Tranzaksiyani yozish (Naqd yoki Karta/POS)
+            cursor.execute("""
+                INSERT INTO transactions (tx_code, session_code, vehicle_plate, provider, amount, status, duration, payment_method, fiscal_sign)
+                VALUES (?, ?, ?, ?, ?, 'SUCCESS', '00:45:00', ?, ?)
+            """, (tx_code, f"SES-{plate}", plate, payment_method, amount, payment_method, fiscal_sign))
+
+            # Audit jurnali
+            cursor.execute("""
+                INSERT INTO audit_logs (operator_name, action, details)
+                VALUES (?, 'MANUAL_PAYMENT_ACCEPTED', ?)
+            """, (operator_name, f"{plate} avto uchun {amount} UZS ({payment_method}) qabul qilindi va {slot_number} bo'shatildi."))
+
+            conn.commit()
+
+        self.add_notification("Qo'lda to'lov qabul qilindi", f"{plate} — {amount} UZS ({payment_method}) qabul qilindi va shlagbaum ochildi", "SUCCESS")
+        return {
+            "success": True,
+            "plate": plate,
+            "amount": amount,
+            "payment_method": payment_method,
+            "tx_code": tx_code,
+            "slot": slot_number
+        }
+
     def get_dashboard_stats(self):
         """Dinamik bosh sahifa ko'rsatkichlari"""
         with self.get_connection() as conn:

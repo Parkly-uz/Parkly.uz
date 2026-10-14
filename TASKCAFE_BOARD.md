@@ -1,9 +1,9 @@
 # 📋 Parkly.uz — Taskcafe & GitHub Projects Kanban Board Scope
 
 > **Loyiha:** Parkly.uz — Smart Parking Management System  
-> **Doska Turi:** Taskcafe / GitHub Projects Kanban Board  
+> **Doska Turi:** Taskcafe / GitHub Projects Kanban Board (Sanoat standarti)  
 > **Qat'iy SLA Cheklovi:** **Foydalanuvchi maksimal kutish vaqti ≤ 10 daqiqa (User Wait Max 10 Min)**  
-> **Joriy Sprint:** Sprint 3 (MVP: Vision ANPR, 10-min SLA Watchdog, Moliya & RBAC)  
+> **Joriy Sprint:** Sprint 3 (MVP: Vision ANPR, 10-min SLA Watchdog, Spot Allocator, No-Automation Payments, Moliya & RBAC)  
 > **GitHub Repozitoriyasi:** [github.com/erjigitvv5/Parkly.uz](https://github.com/erjigitvv5/Parkly.uz) / [github.com/Parkly-uz/Parkly.uz](https://github.com/Parkly-uz/Parkly.uz)
 
 ---
@@ -11,11 +11,11 @@
 ## 🌊 1. Taskcafe Swimlane'lar (Prioritet bo'yicha Qatorlar)
 
 * **🔥 Swimlane 1: [P0-CRITICAL] SLA Blocker & Hardware Fail-Safe (Max 10-Min Wait)**  
-  *Shlagbaum blokirovkasi, kamera uzilishi, 10 daqiqalik kutish chegarasi buzilishiga qarshi avtomatlashtirilgan choralar.*
-* **📷 Swimlane 2: [P0/P1] Computer Vision & Camera ANPR Engine**  
-  *RTSP oqimi, Adaptive CLAHE, Two-Stage YOLO detektor, Homography to'g'irlash, Temporal Voting va OCR chalkashliklarini bartaraf etish.*
-* **💳 Swimlane 3: [P1/P2] Core Backend, RBAC Security & Finance**  
-  *2 Super-Admin, 4 Oddiy Admin matritsasi, 4-Moliya moduli, 7 kunlik grafik, Excel UTF-8 BOM eksport va Payme/Click.*
+  *Shlagbaum blokirovkasi, kamera uzilishi, 10 daqiqalik kutish chegarasi buzilishiga qarshi avtomatlashtirilgan choralar va xatarlarni yumshatish.*
+* **📷 Swimlane 2: [P0/P1] Computer Vision, Camera ANPR & Spot Allocation**  
+  *RTSP oqimi, Adaptive CLAHE, Two-Stage YOLO detektor, Homography to'g'irlash, Temporal Voting, OCR va bo'sh joylarni aqlli taqsimlash.*
+* **💳 Swimlane 3: [P1/P2] Core Backend, Payments (Naqd/POS & Onlayn) & RBAC Finance**  
+  *2 Super-Admin, 4 Oddiy Admin matritsasi, 4-Moliya moduli, naqd/POS avtomatlashtirilmagan to'lovlar, 7 kunlik grafik va Excel eksport.*
 
 ---
 
@@ -94,49 +94,52 @@
 
 ### 🚧 USTUN 3: [ 🚧 In Progress ] (Hozirda Dasturchilar Bajarayotgan Vazifalar)
 
-#### 🎴 CARD-WIP-01: CAM-03 — Two-Stage Plate Region Detector (YOLO/Haar Cascade)
-* **ID:** `PRK-CARD-007` | **Story:** `US-02` | **Prioritet:** `[P0-CRITICAL]` | **SP:** `8`
-* **Mas'ul:** `@dev_ai` | **Tugash Muddati:** Sprint 3 oxiri | **Teglar:** `vision`, `yolo`, `ai`
+#### 🎴 CARD-WIP-01: SPOT-01 — Parkovkada Bo'sh Joyni Aqlli Aniqlash (Spot Allocator)
+* **ID:** `PRK-CARD-007` | **Story:** `US-02` | **Prioritet:** `[P1-HIGH]` | **SP:** `5`
+* **Mas'ul:** `@dev_backend` | **Tugash Muddati:** Sprint 3 | **Teglar:** `spot-allocation`, `smart-parking`, `ev`
+* **Tavsif:** Kirgan transport vositasining turiga (`EV_CHARGING`, `REGULAR`, `VIP_STAFF`, `ACCESSIBLE`) mos ravishda kirish eshigiga eng yaqin va qulay bo'sh joyni evristik xarajat formulasi bo'yicha tanlash.
+* **Acceptance Criteria:**
+  - [ ] Elektromobil bo'lsa quvvatlash stansiyasi bor slot tanlanadi.
+  - [ ] Qavat o'zgarishi uchun +200 jarima balli qo'shiladi.
+  - [ ] Tanlangan slot darhol LED tabloga va Desktop 3D xaritaga chiqariladi.
+
+#### 🎴 CARD-WIP-02: PAY-02 — Avtomatlashtirilmagan (Naqd / POS-terminal) To'lov Moduli
+* **ID:** `PRK-CARD-008` | **Story:** `US-03` | **Prioritet:** `[P1-HIGH]` | **SP:** `5`
+* **Mas'ul:** `@dev_backend` | **Tugash Muddati:** Sprint 3 | **Teglar:** `manual-payment`, `cash`, `pos-terminal`
+* **Tavsif:** Onlayn to'lov bo'lmaganda yoki internet uzilganda haydovchining operatorga naqd pul yoki POS-karta orqali to'lashini ta'minlovchi qo'lda tasdiqlash oynasi va fiskal kvitansiya generatsiyasi.
+* **Acceptance Criteria:**
+  - [ ] Operator "Naqd to'lov qabul qilindi" tugmasini bosganda sessiya `PAID` holatiga o'tadi va shlagbaum ochiladi.
+  - [ ] Internet yoki bank serveri ishlamasa, 10 daqiqa to'lganda "Post-Payment qarz taloni" chiqarilib, haydovchi qo'yib yuboriladi.
+
+#### 🎴 CARD-WIP-03: SYNC-01 — Kirish va Chiqishda Real-Vaqt Ma'lumotlarni Yangilash
+* **ID:** `PRK-CARD-009` | **Story:** `US-01 / US-03` | **Prioritet:** `[P0-CRITICAL]` | **SP:** `5`
+* **Mas'ul:** `@dev_desktop` | **Tugash Muddati:** Sprint 3 | **Teglar:** `real-time`, `state-machine`, `3d-map`
+* **Tavsif:** Mashina kirishi yoki chiqishi bilan butun tizim bo'ylab (DB, Desktop 3D xarita, Dashboard KPI, Kassa hisoboti) ma'lumotlarning soniyalar ichida yangilanishi.
+* **Acceptance Criteria:**
+  - [ ] Kirish: Slot holati `FREE` -> `OCCUPIED`, 3D xaritada mashina modeli va jonli taymer paydo bo'ladi.
+  - [ ] Chiqish: Slot holati `OCCUPIED` -> `FREE`, 3D xaritadan mashina o'chiriladi, kassa tushumiga pul qo'shiladi.
+
+#### 🎴 CARD-WIP-04: CAM-03 — Two-Stage Plate Region Detector (YOLO/Haar Cascade)
+* **ID:** `PRK-CARD-010` | **Story:** `US-02` | **Prioritet:** `[P0-CRITICAL]` | **SP:** `8`
+* **Mas'ul:** `@dev_ai` | **Tugash Muddati:** Sprint 3 | **Teglar:** `vision`, `yolo`, `ai`
 * **Tavsif:** Umumiy kadr ichidan avval transport vositasini topish, so'ngra uning bamperidan 4.5:1 proporsiyadagi raqam maydonini yuqori aniqlikda kesib olish.
-* **Acceptance Criteria:**
-  - [ ] Aniqlash tezligi (Inference latency): `< 40 ms`.
-  - [ ] Kadrda mashina bo'lmasa behuda OCR hisob-kitoblarini bajarmaslik.
-
-#### 🎴 CARD-WIP-02: CAM-06 — Multi-Frame Temporal Consensus Tracker
-* **ID:** `PRK-CARD-008` | **Story:** `US-02` | **Prioritet:** `[P0-CRITICAL]` | **SP:** `5`
-* **Mas'ul:** `@dev_ai` | **Tugash Muddati:** Sprint 3 | **Teglar:** `tracker`, `consensus`, `python`
-* **Tavsif:** 1.5–2.0 soniya ichidagi ketma-ket 3–5 ta kadr natijalarini to'plab, ko'pchilik ovozi (Voting) bilan tasdiqlash.
-* **Acceptance Criteria:**
-  - [x] Bitta shovqinli kadr (`01 A 777 AB`) 4 ta to'g'ri kadr (`01 A 777 AA`) oldida inkor qilinadi.
-  - [ ] Konsensus ishonchliligi `>= 90%` bo'lgandagina sessiyaga kiritiladi.
-
-#### 🎴 CARD-WIP-03: CAM-09 — Desktop ANPR Live Stream & Manual Override Widget
-* **ID:** `PRK-CARD-009` | **Story:** `US-02` | **Prioritet:** `[P1-HIGH]` | **SP:** `5`
-* **Mas'ul:** `@dev_desktop` | **Tugash Muddati:** Sprint 3 | **Teglar:** `pyqt6`, `ui`, `camera-stream`
-* **Tavsif:** Operator uchun 3-modul Kameralar oynasida real-vaqt RTSP oqimini ko'rsatish, kadr ustida yashil/qizil chegaralar chizish va ishonchlilik `< 85%` bo'lganda 1-tugmali tahrirlash dialogini ochish.
-* **Acceptance Criteria:**
-  - [ ] Video kechikishi (latency) `< 200 ms`.
-  - [ ] Operator tahrirlash tugmasini bosganda taymer pauzaga kirmaydi, 10 minutlik SLA hisobi davom etadi.
 
 ---
 
 ### 🎯 USTUN 4: [ 🎯 Sprint Backlog / Ready ] (Keyingi Qadamda Boshlanadigan Vazifalar)
 
-#### 🎴 CARD-RDY-01: US-03 — Chiqishda To'lov Tizimi Uzilgandagi Post-Pay Himoyasi
-* **ID:** `PRK-CARD-010` | **Story:** `US-03` | **Prioritet:** `[P1-HIGH]` | **SP:** `5`
-* **Mas'ul:** `@dev_backend` | **Teglar:** `billing`, `sla:10min`, `payme-click`
-* **⏱️ SLA Kafolati:** Chiqish shlagbaumida to'lov serveri ishlamasa ham haydovchi **10 daqiqadan ko'p ushlab turilmaydi**.
-* **Acceptance Criteria:**
-  - [ ] 7 daqiqa to'lganda operator ekranida "Elektron Qarz Taloni" tugmasi chiqadi.
-  - [ ] 10 daqiqada shlagbaum avtomatik ochilib, haydovchi telefoniga SMS to'lov havolasi yuboriladi.
+#### 🎴 CARD-RDY-01: RSK-01 — Xatarlar Reestri va Eskalatsiya Mexanizmi
+* **ID:** `PRK-CARD-011` | **Story:** `US-PM-01` | **Prioritet:** `[P0-CRITICAL]` | **SP:** `3`
+* **Mas'ul:** `@lead_dev` | **Teglar:** `risk-management`, `sla`, `monitoring`
+* **Tavsif:** 6 ta asosiy xatar (10-min SLA buzilishi, kamera uzilishi, bank agregatori xatosi, blackout) monitoringi va avtomatik zaxira tizimlari.
 
-#### 🎴 CARD-RDY-02: CAM-02 — Adaptive CLAHE & Glare Suppression
-* **ID:** `PRK-CARD-011` | **Story:** `US-02` | **Prioritet:** `[P1-HIGH]` | **SP:** `5`
-* **Mas'ul:** `@dev_ai` | **Teglar:** `opencv`, `clahe`, `night-mode`
-* **Tavsif:** Kechasi avtomobil faralari to'g'ridan-to'g'ri kameraga tushganda yorug'lik aksini (Glare) yo'qotuvchi va qorong'i zonalarni kuchaytiruvchi dinamik filtr.
+#### 🎴 CARD-RDY-02: UI-01 — Minimalist Dribbble Container Shadows & Badges
+* **ID:** `PRK-CARD-012` | **Story:** `US-UI-01` | **Prioritet:** `[P2-MEDIUM]` | **SP:** `3`
+* **Mas'ul:** `@dev_desktop` | **Teglar:** `ui-ux`, `dribbble`, `minimalism`
+* **Tavsif:** Barcha oq bloklarga `16px border-radius`, mayin chegara chiziqlari, Deep Slate Gradient va monospace avto raqami stikeri vizualizatsiyasini to'liq joriy etish.
 
 #### 🎴 CARD-RDY-03: CAM-04 — Homography Perspective Rectification
-* **ID:** `PRK-CARD-012` | **Story:** `US-02` | **Prioritet:** `[P1-HIGH]` | **SP:** `5`
+* **ID:** `PRK-CARD-013` | **Story:** `US-02` | **Prioritet:** `[P1-HIGH]` | **SP:** `5`
 * **Mas'ul:** `@dev_ai` | **Teglar:** `homography`, `warp`, `opencv`
 * **Tavsif:** 30°–45° burchak ostida turgan qiyshiq raqam rasmini tekis to'rtburchakka aylantirish.
 
@@ -144,15 +147,15 @@
 
 ### 📥 USTUN 5: [ 📥 Product Backlog ] (Kelgusi Sprintlar va Strategik Vazifalar)
 
-* **`[P2-MEDIUM]` `PRK-CARD-013`:** Click va Payme Sandbox webhook integratsiyasini to'liq yoqish (8 SP).
-* **`[P2-MEDIUM]` `PRK-CARD-014`:** Mobil ilova (Flutter) haydovchi kabineti uchun slot rezervatsiya API (8 SP).
-* **`[P3-LOW]` `PRK-CARD-015`:** Telegram Bot orqali avtomobil joylashuvi va kvitansiyasini jo'natish (3 SP).
-* **`[P3-LOW]` `PRK-CARD-016`:** Desktop Admin ilovasida qorong'i rejim (Dark Mode / Theme) qo'llab-quvvatlovi (3 SP).
-* **`[P2-MEDIUM]` `PRK-CARD-017`:** Shlagbaum apparaturasi uchun Modbus/MQTT Relay drayverini C++ da integratsiya qilish (5 SP).
+* **`[P2-MEDIUM]` `PRK-CARD-014`:** Click va Payme Sandbox webhook integratsiyasini to'liq yoqish (8 SP).
+* **`[P2-MEDIUM]` `PRK-CARD-015`:** Mobil ilova (Flutter) haydovchi kabineti uchun slot rezervatsiya API (8 SP).
+* **`[P3-LOW]` `PRK-CARD-016`:** Telegram Bot orqali avtomobil joylashuvi va kvitansiyasini jo'natish (3 SP).
+* **`[P3-LOW]` `PRK-CARD-017`:** Desktop Admin ilovasida qorong'i rejim (Dark Mode / Theme) qo'llab-quvvatlovi (3 SP).
+* **`[P2-MEDIUM]` `PRK-CARD-018`:** Shlagbaum apparaturasi uchun Modbus/MQTT Relay drayverini C++ da integratsiya qilish (5 SP).
 
 ---
 
-## 📋 3. Taskcafe / GitHub Loyihasini Import Qilish va Sozlash Ko'rsatmasi
+## 📋 3. Taskcafe / GitHub Loyihasini Sozlash Ko'rsatmasi
 
 1. **GitHub Projects doskasi:**
    - [github.com/erjigitvv5/Parkly.uz/projects](https://github.com/erjigitvv5/Parkly.uz) bo'limiga kiring.
@@ -163,6 +166,7 @@
    - `Story Points`: Number (`1, 2, 3, 5, 8, 13`).
    - `Priority`: Single select (`P0-Critical`, `P1-Core`, `P2-Medium`, `P3-Low`).
    - `Module`: Single select (`1.Dashboard`, `2.Map`, `3.Cameras`, `4.Finance`, `5.Sessions`, `6.Staff`, `7.Settings`).
+   - `Payment Method`: Single select (`Online (Payme/Click)`, `No-Automation (Cash/POS)`).
 3. **Avtomatlashtirish (Workflows):**
    - PR ochilganda kartochka avtomatik **Review & QA** ustuniga o'tadi.
-   - PR `main` branchga merge qilinganda kartochka avtomatik **Done / Shipped** ustuniga o'tadi.
+   - PR `main` yoki `Mirhamid` branchga merge qilinganda kartochka avtomatik **Done / Shipped** ustuniga o'tadi.
