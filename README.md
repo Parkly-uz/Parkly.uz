@@ -49,8 +49,12 @@ Parkly.uz haydovchilar uchun bo'sh joylarni real vaqt rejimida (real-time) topis
 | **Backend / Frontend / Mobile Devs** | **Write** | Funksional kod yozish, yangi feature branchlar, PR yaratish |
 | **QA / Tester** | **Triage / Read** | Bug reportlar ochish, release test qilish |
 
-> Batafsil ruxsatlar bo'yicha ko'rsatma: [ROLES_AND_PERMISSIONS.md](ROLES_AND_PERMISSIONS.md)  
-> Rasmiy loyiha boshqaruvi hujjatlari: [PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) | [PROJECT_MANAGEMENT_PLAN.md](docs/PROJECT_MANAGEMENT_PLAN.md)
+> ⏱️ **Qat'iy SLA Cheklovi:** Foydalanuvchining maksimal kutish vaqti **≤ 10 daqiqa** (User Wait Max 10 Min).  
+> 📋 Rasmiy Backlog va User Story'lar: [BACKLOG.md](BACKLOG.md)  
+> 📌 Taskcafe / GitHub Kanban Doskasi: [TASKCAFE_BOARD.md](TASKCAFE_BOARD.md)  
+> 📑 100 ta Texnik Vazifalar Ro'yxati: [BACKLOG_100_TASKS.md](BACKLOG_100_TASKS.md)  
+> 🛡️ Huquqlar Matritsasi va Rollar: [ROLES_AND_PERMISSIONS.md](ROLES_AND_PERMISSIONS.md)  
+> 📊 Loyiha Nizomi va Boshqaruv Rejasi: [PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) | [PROJECT_MANAGEMENT_PLAN.md](docs/PROJECT_MANAGEMENT_PLAN.md)
 
 ---
 

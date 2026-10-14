@@ -1,9 +1,10 @@
 # 📋 Parkly.uz — Top 100 Mukammal Backlog Tasklar Ro'yxati
 
 > **Loyiha:** Parkly.uz — Smart Parking Management System  
-> **Texnologik stek:** Python (FastAPI/Core API), PostgreSQL, C/C++ (Hardware/Simulyator datchiklar boshqaruvi)  
-> **Sensor simulyatori:** CLI (konsol) orqali ishlovchi avtomatik skript (tasodifiy mashinalar oqimi)  
-> **Admin panel:** Desktop ilova (Super-admin, 2 ta adminlar, 5 ta smena operatorlari)  
+> **Texnologik stek:** Python (FastAPI/Core API), PostgreSQL / SQLite, C/C++ (Hardware/Simulyator datchiklar boshqaruvi)  
+> **Kamera va ANPR:** Real-time RTSP/IP Kameralar, Two-Stage Detektor, Temporal Voting va **10 daqiqalik maksimal kutish SLA'si (User Wait Max 10 Min)**  
+> **Admin panel:** Desktop ilova (2 ta Super-Admin, 4 ta Oddiy Admin, 2 ta Smena Operatori)  
+> **Navigatsiyada 4-o'rin:** 💳 **Moliya va Tranzaksiyalar bo'limi** (Kunlik/haftalik/oylik tushum, 7 kunlik bar chart, Excel UTF-8 BOM eksport, Super-Admin tariflari)  
 > **To'lovlar:** Payme va Click (Sandbox test rejimi) + Fiskal chek ma'lumotlari modeli  
 > **Tuzilma:** 10 ta Modul x 10 ta Task = **Jami 100 ta aniq texnik vazifa**
 
@@ -20,19 +21,19 @@
    - *Qatlam:* PM / Docs | *SP:* 3
 
 3. **TASK-003: Risk Register (Xatarlar reestri) tuzish**
-   - *Tavsif:* Texnik (C/C++ portlar, simulyator kechikishi) va tashkiliy xatarlarni baholash va yumshatish choralari.
+   - *Tavsif:* Texnik (kamera uzilishi, 10 daqiqa SLA buzilishi, simulyator kechikishi) va tashkiliy xatarlar reestri.
    - *Qatlam:* PM / Docs | *SP:* 2
 
-4. **TASK-004: GitHub Projects Kanban doskasini sozlash**
-   - *Tavsif:* `Backlog` -> `Sprint To Do` -> `In Progress` -> `Review` -> `Done` ustunlari, avtomatik workflowlar.
-   - *Qatlam:* PM / GitHub | *SP:* 2
+4. **TASK-004: Taskcafe & GitHub Projects Kanban doskasini sozlash**
+   - *Tavsif:* `Product Backlog` -> `Sprint Ready` -> `In Progress` -> `Review & QA` -> `Done` ustunlari, SLA taymerlari va swimlanelar.
+   - *Qatlam:* PM / GitHub / Taskcafe | *SP:* 2
 
 5. **TASK-005: GitHub Label'lar va Milestone'lar tizimini yaratish**
-   - *Tavsif:* `Sprint 1-4` milestonelari, `epic`, `story`, `task`, `bug`, `priority:must/should/could` yorliqlari.
+   - *Tavsif:* `Sprint 1-4` milestonelari, `epic`, `story`, `task`, `bug`, `priority:p0/p1/p2/p3`, `sla:max-10min` yorliqlari.
    - *Qatlam:* PM / GitHub | *SP:* 1
 
 6. **TASK-006: Foydalanuvchi talablarini yig'ish (Stakeholder Interviews)**
-   - *Tavsif:* Haydovchi, Super-admin, Parkovka admini va Smena operatori talablarini tahlil qilish.
+   - *Tavsif:* Haydovchi, Super-admin (2 kishi), Oddiy admin (4 kishi) va Smena operatori (2 kishi) talablarini tahlil qilish.
    - *Qatlam:* Tahlil / Docs | *SP:* 3
 
 7. **TASK-007: Raqobatchilar va mavjud yechimlarni tahlil qilish**
@@ -40,11 +41,11 @@
    - *Qatlam:* Tahlil / Docs | *SP:* 2
 
 8. **TASK-008: SRS (Software Requirements Specification) yozish**
-   - *Tavsif:* Funksional va nofunksional talablarni IEEE standarti asosida rasmiylashtirish.
+   - *Tavsif:* Funksional va nofunksional talablarni (shu jumladan 10 minutlik kutish SLA) IEEE standarti asosida rasmiylashtirish.
    - *Qatlam:* Tahlil / Docs | *SP:* 5
 
 9. **TASK-009: Foydalanuvchi yo'li xaritasi (User Journey Map)**
-   - *Tavsif:* Haydovchining kirishdan to'lov qilib chiqib ketishigacha bo'lgan qadamlari xaritasi.
+   - *Tavsif:* Haydovchining kirishdan to'lov qilib chiqib ketishigacha bo'lgan qadamlari va maksimal kutish oraliqlari xaritasi.
    - *Qatlam:* UI/UX / Tahlil | *SP:* 2
 
 10. **TASK-010: Sprint 1 backlogini tasdiqlash va vazifalarni taqsimlash**
@@ -56,11 +57,11 @@
 ## 💻 MODUL 2: Arxitektura, DB Dizayni va C/C++ Hardware Asosi (Tasks 11–20)
 
 11. **TASK-011: Tizimning umumiy C4 arxitektura diagrammasini chizish**
-    - *Tavsif:* Python Backend API, Desktop Admin, C/C++ Simulyator va PostgreSQL o'zaro aloqa chizmasi.
+    - *Tavsif:* Python Backend API, Desktop Admin, C/C++ Simulyator va PostgreSQL/SQLite o'zaro aloqa chizmasi.
     - *Qatlam:* Arxitektura | *SP:* 3
 
 12. **TASK-012: PostgreSQL ERD (Entity Relationship Diagram) ishlab chiqish**
-    - *Tavsif:* Barcha modellar (`users`, `roles`, `parking_lots`, `slots`, `sessions`, `reservations`, `payments`).
+    - *Tavsif:* Barcha modellar (`users`, `roles`, `parking_lots`, `slots`, `sessions`, `transactions`, `tariffs`).
     - *Qatlam:* PostgreSQL / DB | *SP:* 5
 
 13. **TASK-013: DB Indekslash va Cheklovlar (Constraints) strategiyasi**
@@ -71,8 +72,8 @@
     - *Tavsif:* TCP Socket, IPC yoki REST orqali tezkor binar/JSON xabarlar almashish spetsifikatsiyasi.
     - *Qatlam:* C/C++ / Python | *SP:* 4
 
-15. **TASK-015: Ma'lumotlar bazasi migratsiya mexanizmini sozlash (Alembic)**
-    - *Tavsif:* Python backendda Alembic orqali versiyalangan DB migratsiyalarini yo'lga qo'yish.
+15. **TASK-015: Ma'lumotlar bazasi migratsiya mexanizmini sozlash**
+    - *Tavsif:* Schema migratsiyalari va avtomatik seeder (2 Super-Admin, 4 Oddiy Admin, 2 Operator) yozish.
     - *Qatlam:* Python / DB | *SP:* 3
 
 16. **TASK-016: API shartnomasi va ma'lumotlar sxemalarini (Pydantic) yaratish**
@@ -100,7 +101,7 @@
 ## ⚙️ MODUL 3: Dasturlash Muhiti, Docker va CI/CD (Tasks 21–30)
 
 21. **TASK-021: Repozitoriya papkalar strukturasini standartlashtirish**
-    - *Tavsif:* `/backend`, `/desktop-admin`, `/simulator-cpp`, `/docs` monorepo yoki modulli strukturasi.
+    - *Tavsif:* `/backend`, `/desktop_admin`, `/simulator`, `/tests`, `/docs` toza va modulli strukturasi.
     - *Qatlam:* DevOps / Git | *SP:* 2
 
 22. **TASK-022: `.env.example` va konfiguratsiya boshqaruv tizimi**
@@ -112,43 +113,43 @@
     - *Qatlam:* Docker | *SP:* 3
 
 24. **TASK-024: Python Backend uchun Dockerfile yaratish**
-    - *Tavsif:* Multi-stage build, minimal xavfsiz alpine/slim imij.
+    - *Tavsif:* Multi-stage build, minimal xavfsiz python-slim imij.
     - *Qatlam:* Docker | *SP:* 3
 
-25. **TASK-025: C/C++ Simulyatori uchun CMake va build skriptlarini sozlash**
-    - *Tavsif:* CMakeLists.txt, avtomatik kompilyatsiya va binar fayllarni chiqarish.
+25. **TASK-025: C/C++ simulyatori uchun CMakeLists.txt sozlash**
+    - *Tavsif:* CMakeLists.txt, Qt5/Qt6 bog'lamalari va avtomatik kompilyatsiya.
     - *Qatlam:* C/C++ / Build | *SP:* 3
 
-26. **TASK-026: Kod sifatini tekshiruvchi Linterni sozlash (Ruff / Black / Clang-Format)**
-    - *Tavsif:* PEP8 va C++ Google kod uslubini majburiy tekshirish qoidalari.
-    - *Qatlam:* CI / Quality | *SP:* 2
+26. **TASK-026: Python virtual environment va `requirements.txt` ni yangilash**
+    - *Tavsif:* PyQt6, opencv-python, numpy, pydantic, sqlalchemy, pytest paketlarini aniq versiyalar bilan yozish.
+    - *Qatlam:* Python / DevOps | *SP:* 1
 
-27. **TASK-027: Pre-commit hooklarni sozlash**
-    - *Tavsif:* Commit qilishdan oldin formatlash va maxfiy ma'lumotlar (.env leak) yo'qligini tekshirish.
-    - *Qatlam:* Git / Hooks | *SP:* 2
+27. **TASK-027: Linter va Formatter sozlash (Ruff / Black / Clang-Format)**
+    - *Tavsif:* PEP8 va Google C++ uslubini avtomatik tekshirish.
+    - *Qatlam:* Code Quality | *SP:* 2
 
-28. **TASK-028: GitHub Actions CI workflow (Python & C++ testlari)**
-    - *Tavsif:* Har bir Pull Request ochilganda testlar va lint avtomatik yugurishi.
-    - *Qatlam:* CI / GitHub | *SP:* 4
+28. **TASK-028: GitHub Actions CI: Avtomatik Testlar (Workflow)**
+    - *Tavsif:* Har bir PR ochilganda 20 ta unit/integratsion testlarni avtomatik ishga tushirish.
+    - *Qatlam:* CI/CD | *SP:* 4
 
-29. **TASK-029: Test ma'lumotlari generatori (DB Seeder)**
-    - *Tavsif:* 100 ta sinov foydalanuvchisi, 3 ta parkovka va 150 ta slotni bazaga avtomatik kiritish.
-    - *Qatlam:* Python / Seed | *SP:* 3
+29. **TASK-029: Git Branch Protection qoidalarini joriy qilish (`main` va `Mirhamid`)**
+    - *Tavsif:* Faqat PR va tasdiq (Approval) orqali merge qilish tartibi.
+    - *Qatlam:* GitHub / Security | *SP:* 2
 
-30. **TASK-030: Lokal dasturchi yo'riqnomasi (CONTRIBUTING & Setup Guide)**
-    - *Tavsif:* Yangi dasturchi kelganda loyihani 15 daqiqada ishga tushirish qo'llanmasi.
+30. **TASK-030: Ishlab chiquvchi uchun tezkor start qo'llanmasi (CONTRIBUTING.md)**
+    - *Tavsif:* Loyihani 5 daqiqada ishga tushirish bo'yicha yo'riqnoma.
     - *Qatlam:* Docs | *SP:* 2
 
 ---
 
-## 👥 MODUL 4: Foydalanuvchilar, RBAC Rollar va Auth (Tasks 31–40)
+## 👥 MODUL 4: Foydalanuvchilar, RBAC Rollar va Xavfsizlik (Tasks 31–40)
 
 31. **TASK-031: Foydalanuvchilar va Rollar DB jadvallarini yaratish**
-    - *Tavsif:* `users`, `roles`, `user_roles`, `permissions` jadvallari va migratsiyalari.
+    - *Tavsif:* `users`, `roles`, `permissions` jadvallari va seeder.
     - *Qatlam:* DB / Models | *SP:* 3
 
-32. **TASK-032: Rollar matritsasini realizatsiya qilish (RBAC)**
-    - *Tavsif:* 1 ta Super-Admin, 2 ta Admin (filial), 5 ta Operator (smena) va Haydovchi ruxsatlari.
+32. **TASK-032: Huquqlar Matritsasini realizatsiya qilish (RBAC)**
+    - *Tavsif:* **2 ta Super-Admin** (to'liq kirish), **4 ta Oddiy Admin** (monitoring va 4-moliya ko'rish, lekin sozlamalar/xodimlar qulflangan), **2 ta Operator** (smena nazorati).
     - *Qatlam:* Python / Auth | *SP:* 4
 
 33. **TASK-033: Parollarni xavfsiz hash qilish (Argon2 / BCrypt)**
@@ -159,290 +160,290 @@
     - *Tavsif:* Qisqa muddatli Access token (15 min) va xavfsiz Refresh token (7 kun) mexanizmi.
     - *Qatlam:* Python / Auth | *SP:* 4
 
-35. **TASK-035: Role-based Permission Middleware / Dependency Injection**
-    - *Tavsif:* `@requires_role(Role.SUPER_ADMIN)` dekoratori yoki FastAPI dependency nazorati.
+35. **TASK-035: Role-based Permission Guard Middleware**
+    - *Tavsif:* Oddiy admin yoki operator ruxsatsiz bo'limga kirganda 403 Forbidden berish.
     - *Qatlam:* Python / API | *SP:* 3
 
-36. **TASK-036: Haydovchi ro'yxatdan o'tish (SMS / Telefon tasdiqlash mock)**
-    - *Tavsif:* Telefon raqam orqali tezkor SMS OTP tasdiqlash logikasi.
-    - *Qatlam:* Python / API | *SP:* 3
-
-37. **TASK-037: Foydalanuvchi profili va avtomobillarni saqlash API**
+36. **TASK-036: Haydovchi profili va avtomobillarni saqlash API**
     - *Tavsif:* Davlat raqami, mashina modeli va rangini profilga biriktirish CRUD.
     - *Qatlam:* Python / API | *SP:* 3
 
-38. **TASK-038: Admin tomonidan operatorlarni yaratish va smenaga biriktirish API**
-    - *Tavsif:* Super-admin va Admin yangi 5 ta operator akkauntlarini ochishi va parolini boshqarishi.
+37. **TASK-037: Super-Admin tomonidan admin va operatorlarni yaratish API**
+    - *Tavsif:* Faqat Super-Admin yangi 4 ta admin va 2 ta operator akkauntlarini ochishi va o'chirishi.
+    - *Qatlam:* Python / API | *SP:* 3
+
+38. **TASK-038: Smenalarni boshqarish va navbatchilik logikasi**
+    - *Tavsif:* Smena 1 (08:00 - 20:00) va Smena 2 (20:00 - 08:00) operatorlarini biriktirish.
     - *Qatlam:* Python / API | *SP:* 3
 
 39. **TASK-039: Akkauntni bloklash va sessiyalarni bekor qilish API**
-    - *Tavsif:* Xavfsizlik buzilganda yoki operator ishdan bo'shatilganda darhol tokenlarni blacklistga kiritish.
+    - *Tavsif:* Xavfsizlik buzilganda darhol tokenlarni blacklistga kiritish.
     - *Qatlam:* Python / Redis | *SP:* 3
 
-40. **TASK-040: Auth moduli uchun to'liq Unit va Integratsion testlar**
-    - *Tavsif:* Noto'g'ri parol, muddati o'tgan token, huquqi yetmagan rol holatlarini testlash.
+40. **TASK-040: RBAC va Auth moduli uchun to'liq Unit testlar**
+    - *Tavsif:* Super-Admin ruxsatlari, Oddiy Admin cheklovlari va Operator taqiqlari testlari.
     - *Qatlam:* Testing / QA | *SP:* 4
 
 ---
 
-## 📟 MODUL 5: C/C++ va Python Sensor Simulyatori (CLI Oqimi) (Tasks 41–50)
+## 📟 MODUL 5: C/C++ va Python Sensor Simulyatori (Tasks 41–50)
 
-41. **TASK-041: C/C++ Simulyatori asosiy arxitekturasini qurish**
-    - *Tavsif:* Multi-threaded yoki asinxron arxitektura: virtual datchiklar holatini boshqarish.
-    - *Qatlam:* C/C++ / Core | *SP:* 5
+41. **TASK-041: Sensor simulyatori dvigatelini qurish**
+    - *Tavsif:* Multi-threaded arxitektura: virtual datchiklar oqimini yaratish.
+    - *Qatlam:* C/C++ / Python | *SP:* 5
 
 42. **TASK-042: O'zbekiston avtomobil raqamlari tasodifiy generatori**
-    - *Tavsif:* `01 A 777 AA`, `10 123 BBA` formatidagi haqiqiy davlat raqamlarini generatsiya qilish.
+    - *Tavsif:* `01 A 777 AA`, `10 123 BBA` formatidagi davlat raqamlarini generatsiya qilish.
     - *Qatlam:* C/C++ / Python | *SP:* 2
 
-43. **TASK-043: CLI konsol foydalanuvchi interfeysi (Interactive Terminal Dashboard)**
-    - *Tavsif:* Terminalda chiroyli ASCII/ANSI formatida joriy mashinalar, tezlik va holatlarni ko'rsatish.
-    - *Qatlam:* CLI / C++ | *SP:* 3
+43. **TASK-043: CLI konsol foydalanuvchi interfeysi (UTF-8 Xavfsiz)**
+    - *Tavsif:* Windows terminallarida `UnicodeEncodeError` bermaydigan toza ANSI jadvali.
+    - *Qatlam:* CLI / Python | *SP:* 3
 
-44. **TASK-044: Tasodifiy mashinalar kirish/chiqish oqimi generatori (Poisson Distribution)**
+44. **TASK-044: Tasodifiy mashinalar kirish/chiqish oqimi generatori**
     - *Tavsif:* Real hayotga o'xshash: ertalab va kechqurun gavjum, tushda o'rtacha trafik oqimi.
-    - *Qatlam:* C/C++ / Algoritm | *SP:* 4
+    - *Qatlam:* Algoritm | *SP:* 4
 
 45. **TASK-045: Virtual slot datchiklari holatini boshqarish (Free / Occupied)**
-    - *Tavsif:* Har bir joy uchun virtual ultratovush datchigi: avto joylashganda `OCCUPIED`, chiqsa `FREE`.
+    - *Tavsif:* Har bir joy uchun virtual datchik: avto joylashganda `OCCUPIED`, chiqsa `FREE`.
     - *Qatlam:* C/C++ | *SP:* 3
 
-46. **TASK-046: Backend API bilan TCP Socket / HTTP Client aloqasi**
-    - *Tavsif:* C/C++ simulyatoridan Python Backendga tezkor kirish/chiqish hodisalarini (events) yuborish.
-    - *Qatlam:* C/C++ / Network | *SP:* 4
+46. **TASK-046: Backend API bilan tezkor aloqa (Socket / REST Client)**
+    - *Tavsif:* Simulyatordan Python Backendga real-vaqt kirish/chiqish hodisalarini yuborish.
+    - *Qatlam:* Network | *SP:* 4
 
 47. **TASK-047: CLI orqali simulyator tezligi va parametrlarini boshqarish**
-    - *Tavsif:* Konsoldan buyruqlar: `--rate=10` (daqiqa tezligi), `--cars=50`, `--chaos-mode` (nosozliklar).
-    - *Qatlam:* CLI / Args | *SP:* 3
+    - *Tavsif:* `--interval=2.0` (sekund tezligi) argumentlari orqali boshqarish.
+    - *Qatlam:* CLI | *SP:* 2
 
-48. **TASK-048: Virtual Shlagbaum holati simulyatsiyasi (Barrier State)**
-    - *Tavsif:* Signal kelganda ochilish (OPENING -> OPEN -> CLOSING -> CLOSED) vaqt sikllari.
+48. **TASK-048: Virtual Shlagbaum holati simulyatsiyasi (Barrier State Machine)**
+    - *Tavsif:* Ochilish va yopilish vaqt sikllari (OPENING -> OPEN -> CLOSING -> CLOSED).
     - *Qatlam:* C/C++ | *SP:* 3
 
-49. **TASK-049: Simulyator nosozliklari va zaxira holatlarini testlash (Edge Cases)**
-    - *Tavsif:* Raqam o'qilmay qolishi (no-plate event) va zaxira QR kod generatsiyasiga signal berish.
-    - *Qatlam:* C/C++ / Test | *SP:* 3
+49. **TASK-049: Slotlar xaritasi bilan simulyator sinxronizatsiyasi**
+    - *Tavsif:* Desktop interaktiv xaritasida slot ranglari simulyator bilan bir vaqtda o'zgarishi.
+    - *Qatlam:* Integration | *SP:* 4
 
-50. **TASK-050: Simulyatorni ishga tushirish bo'yicha CLI qo'llanma (SIMULATOR_README.md)**
-    - *Tavsif:* Dasturchi va testerlar simulyatorni qanday ishga tushirishi bo'yicha to'liq qo'llanma.
-    - *Qatlam:* Docs | *SP:* 2
+50. **TASK-050: Simulyator barqarorligi va yuklama testlari**
+    - *Tavsif:* 1000 ta mashina oqimida xotira oqib ketmasligini (Memory leak) tekshirish.
+    - *Qatlam:* QA | *SP:* 3
 
 ---
 
-## 🚗 MODUL 6: Parkovka Boshqaruvi va Real-Vaqt Slotlar (Tasks 51–60)
+## 📷 MODUL 6: Computer Vision, ANPR va Kameralar Mantiqi (Tasks 51–60)
 
-51. **TASK-051: `ParkingLot` va `ParkingSpot` DB modellarini to'liq yaratish**
-    - *Tavsif:* Qavatlar, zonalar (A, B, C), slot raqamlari, koordinatalari va tarif bog'lanmalari.
-    - *Qatlam:* DB / Models | *SP:* 3
+51. **TASK-051 (CAM-01): Multi-Source Zero-Latency RTSP Streamer**
+    - *Tavsif:* RTSP, IP-kamera, USB web-kamera oqimini bufer to'lib ketishisiz qabul qilish va Reconnect Watchdog.
+    - *Qatlam:* OpenCV / Threading | *SP:* 5
 
-52. **TASK-052: Parkovkalar va zonalar CRUD API**
-    - *Tavsif:* Yangi parkovka qo'shish, slotlar sonini belgilash, koordinatalarni saqlash API.
-    - *Qatlam:* Python / API | *SP:* 3
+52. **TASK-052 (CAM-02): Adaptive CLAHE & Glare Suppression**
+    - *Tavsif:* Tungi qorong'ilik va faralar nurini bartaraf etuvchi dinamik yorug'lik va kontrast filtri.
+    - *Qatlam:* OpenCV | *SP:* 5
 
-53. **TASK-053: Parkovka faol sessiyalari moduli (`ParkingSession`)**
-    - *Tavsif:* Kirgan avtomobil uchun sessiya ochish (`ACTIVE`), kirish vaqti va eshigini yozish.
-    - *Qatlam:* Python / Core | *SP:* 4
+53. **TASK-053 (CAM-03): Two-Stage Plate Region Detector (YOLO/Haar)**
+    - *Tavsif:* Avval avtomobil korpusini, so'ngra 4.5:1 proporsiyadagi raqam to'rtburchagini ajratib olish.
+    - *Qatlam:* PyTorch / OpenCV | *SP:* 8
 
-54. **TASK-054: Simulyatordan kelgan kirish xabarini qayta ishlash Webhook/Ingress**
-    - *Tavsif:* C++ simulyatordan raqam kelganda bo'sh slotni avtomatik biriktirish va sessiyani boshlash.
-    - *Qatlam:* Python / Engine | *SP:* 4
+54. **TASK-054 (CAM-04): Homography Perspective Rectification**
+    - *Tavsif:* 30°–45° burchak ostida turgan qiyshiq raqam rasmini tekis to'rtburchakka aylantirish (Warp).
+    - *Qatlam:* OpenCV (Homography) | *SP:* 5
 
-55. **TASK-055: Chiqish hodisasi va sessiyani yopish logikasi**
-    - *Tavsif:* Mashina chiqish to'sig'iga kelganda sessiyani tekshirish, pulni hisoblash va slotni bo'shatish.
-    - *Qatlam:* Python / Engine | *SP:* 4
+55. **TASK-055 (CAM-05): Uzbekistan Plate Disambiguation OCR Engine**
+    - *Tavsif:* `01 A 777 AA` va `01 123 AAA` formatlari bo'yicha harf-raqam chalkashliklarini tuzatish (`O`<->`0`, `B`<->`8`, `Z`<->`2`).
+    - *Qatlam:* Regex / OCR | *SP:* 5
 
-56. **TASK-056: Real-vaqt WebSocket serverini sozlash (FastAPI WebSockets)**
-    - *Tavsif:* Har bir slot holati o'zgarganda ulangan Desktop ilovalarga 500ms ichida signal tarqatish.
-    - *Qatlam:* Python / WebSocket | *SP:* 5
+56. **TASK-056 (CAM-06): Multi-Frame Temporal Consensus Tracker**
+    - *Tavsif:* Ketma-ket 3–5 kadr konsensusi asosida ko'pchilik ovozi bilan yakuniy raqamni tasdiqlash.
+    - *Qatlam:* Python DS | *SP:* 5
 
-57. **TASK-057: Zaxira Polling API (Long-Polling Fallback)**
-    - *Tavsif:* Agar WebSocket uzilib qolsa, desktop ilova uchun tezkor keshdan oxirgi holatni olish.
-    - *Qatlam:* Python / Redis | *SP:* 3
+57. **TASK-057 (CAM-07): Confidence Score Decision Engine**
+    - *Tavsif:* `>= 85%` bo'lsa shlagbaum avto ochiladi, `< 85%` bo'lsa operator monitoriga snapshot bilan tushadi.
+    - *Qatlam:* Backend / Logic | *SP:* 3
 
-58. **TASK-058: Parkovka xaritasi va slotlar joylashuv sxemasi ma'lumotlar modeli**
-    - *Tavsif:* Desktop panelda chizish uchun har bir slotning (X, Y) koordinatalari va burchagi.
-    - *Qatlam:* DB / JSON | *SP:* 3
+58. **TASK-058 (CAM-08): 10-Minute SLA Watchdog & Emergency Fail-Safe**
+    - *Tavsif:* **Foydalanuvchi kutish vaqti ≤ 10 daqiqa:** 5-minutda sariq, 7-minutda qizil eskalatsiya, 10-minutda avtomatik favqulodda ochish.
+    - *Qatlam:* Background Worker / SLA | *SP:* 5
 
-59. **TASK-059: Zaxira QR kod yaratish va tekshirish servisi**
-    - *Tavsif:* Raqam o'qilmagan holatlarda shifrlangan bir martalik QR chipta generatsiya qilish API.
-    - *Qatlam:* Python / QR | *SP:* 3
+59. **TASK-059 (CAM-09): Desktop ANPR Live Stream & Manual Override Widget**
+    - *Tavsif:* Operator uchun real-vaqt video oynasi, confidence ko'rsatkichi va 1-tugmali tezkor tasdiqlash dialogi.
+    - *Qatlam:* PyQt6 / Desktop | *SP:* 5
 
-60. **TASK-060: Slot boshqaruvi va sessiyalar bo'yicha integratsion testlar**
-    - *Tavsif:* 50 ta avtomobil bir vaqtda kirib-chiqqanda poyga holati (race condition) yo'qligini tekshirish.
-    - *Qatlam:* QA / Testing | *SP:* 4
+60. **TASK-060 (CAM-10): Offline Camera Fallback & Audit Logger**
+    - *Tavsif:* Kamera uzilganda test rejimiga o'tish, shlagbaum harakatlarini audit bazasida qayd etish.
+    - *Qatlam:* SQLite / Postgres | *SP:* 3
 
 ---
 
 ## 📅 MODUL 7: Joy Band Qilish (Booking & Reservation) (Tasks 61–70)
 
-61. **TASK-061: `Reservation` ma'lumotlar bazasi modelini yaratish**
-    - *Tavsif:* `user_id`, `slot_id`, `start_time`, `end_time`, `status: PENDING/CONFIRMED/EXPIRED/CANCELLED`.
+61. **TASK-061: Joy band qilish ma'lumotlar modeli (DB Schema)**
+    - *Tavsif:* `reservations` jadvali (`slot_id`, `start_time`, `end_time`, `status`).
     - *Qatlam:* DB / Models | *SP:* 3
 
 62. **TASK-062: Vaqt to'qnashuvini (Overlap Conflict) tekshirish algoritmi**
-    - *Tavsif:* PostgreSQL `tstzrange` va `EXCLUDE` cheklovi orqali bitta slotga 2 kishi tushishini nolga tushirish.
-    - *Qatlam:* DB / Algoritm | *SP:* 4
+    - *Tavsif:* `max(start_a, start_b) < min(end_a, end_b)` qoidasi bo'yicha to'qnashuvlarni aniqlash.
+    - *Qatlam:* Python / Algoritm | *SP:* 4
 
-63. **TASK-063: Joyni oldindan bron qilish API (Create Reservation)**
-    - *Tavsif:* Haydovchi vaqt oralig'ini tanlab, bo'sh joyni ma'lum muddatga ushlab turish so'rovi.
+63. **TASK-063: Slotni oldindan bron qilish API (Create Reservation)**
+    - *Tavsif:* Xavfsiz tranzaksiya orqali joyni bron qilish va unikal QR-kod tokeni generatsiya qilish.
     - *Qatlam:* Python / API | *SP:* 4
 
-64. **TASK-064: Bron qilishda ushlab turish vaqti (Hold Timeout) mexanizmi**
-    - *Tavsif:* To'lov yoki tasdiq bo'lmasa, 10 daqiqadan so'ng vaqtincha band qilingan joyni avtomatik ochib yuborish.
-    - *Qatlam:* Redis / Celery | *SP:* 4
+64. **TASK-064: Bron muddati tugashi va avtomatik bekor qilish (Expired Worker)**
+    - *Tavsif:* Agar haydovchi belgilangan vaqtdan 15 daqiqa kechiksa, bronni bekor qilish va slotni bo'shatish.
+    - *Qatlam:* Background Worker | *SP:* 4
 
-65. **TASK-065: Bronni bekor qilish (Cancellation) API**
-    - *Tavsif:* Foydalanuvchi yoki admin tomonidan bronni bekor qilish va qaytarish qoidalari.
+65. **TASK-065: Bronni haydovchi tomonidan bekor qilish (Cancel Reservation) API**
+    - *Tavsif:* Jarimasiz yoki jarima bilan bekor qilish logikasi.
     - *Qatlam:* Python / API | *SP:* 3
 
-66. **TASK-066: Muddati o'tgan bronlarni tozalovchi fon vazifasi (Background Worker)**
-    - *Tavsif:* Belgilangan vaqtdan 15 daqiqa o'tib kelmagan avtomobillar bronini `EXPIRED` qilish.
-    - *Qatlam:* Python / Worker | *SP:* 3
+66. **TASK-066: Bron qilingan avtomobil kelganda shlagbaumni ochish logikasi**
+    - *Tavsif:* ANPR raqamni o'qiganda faol bron bilan solishtirish va to'g'ridan-to'g'ri o'tkazish.
+    - *Qatlam:* Gate Controller | *SP:* 3
 
-67. **TASK-067: Bron qilingan avtomobil kirganda avtomatik tutashtirish**
-    - *Tavsif:* Simulyatordan mashina raqami kelganda, uning faol broni bo'lsa, uni to'g'ri o'z slotiga yo'naltirish.
-    - *Qatlam:* Python / Logic | *SP:* 4
+67. **TASK-067: Bron statistikasi va bandlik prognozi**
+    - *Tavsif:* Ertangi kun uchun soatlar bo'yicha bandlik ehtimolini hisoblash.
+    - *Qatlam:* Analytics | *SP:* 4
 
-68. **TASK-068: Haydovchining shaxsiy bronlar tarixi API**
-    - *Tavsif:* O'tgan, joriy va rejadagi band qilingan joylar ro'yxatini sahifalab (pagination) olish.
-    - *Qatlam:* Python / API | *SP:* 2
+68. **TASK-068: Bron tasdiqlash bildirishnomalari (SMS / Push mock)**
+    - *Tavsif:* Haydovchiga manzil, slot raqami va vaqt ko'rsatilgan bildirishnoma yuborish.
+    - *Qatlam:* Notifications | *SP:* 3
 
-69. **TASK-069: Bron qilish qoidalarini sozlash (Admin Config)**
-    - *Tavsif:* Necha soat oldin bron qilish mumkinligi va eng kam/ko'p vaqt chegaralarini belgilash.
-    - *Qatlam:* Python / Admin | *SP:* 2
+69. **TASK-069: Desktop Admin xaritasida bron qilingan slotlar (Sariq rang)**
+    - *Tavsif:* 3D izometrik xaritada sariq indikator va bron tafsilotlari kartochkasi.
+    - *Qatlam:* Desktop / Map | *SP:* 3
 
-70. **TASK-070: Booking moduli uchun yuklama va konkurentlik (Concurrency) testlari**
-    - *Tavsif:* 1 ta oxirgi bo'sh joyga bir vaqtda 20 ta so'rov kelganda to'g'ri ishlashini sinovdan o'tkazish.
-    - *Qatlam:* QA / Load Test | *SP:* 4
+70. **TASK-070: Reservation Matcher uchun Unit va Stress testlar**
+    - *Tavsif:* 100 ta parallel bron so'rovlarida to'qnashuv (double-booking) yuz bermasligini tekshirish.
+    - *Qatlam:* Testing / QA | *SP:* 4
 
 ---
 
-## 💳 MODUL 8: Tariflar va To'lov Tizimi (Payme / Click Sandbox) (Tasks 71–80)
+## 💳 MODUL 8: Tariflar va To'lov Tizimi (Tasks 71–80)
 
-71. **TASK-071: Moslashuvchan tariflar ma'lumotlar bazasi modeli (`Tariff`)**
-    - *Tavsif:* Bepul daqiqalar (Grace period: 15 min), soatlik stavka, kunlik maksimal chegara, kechki tarif.
-    - *Qatlam:* DB / Models | *SP:* 3
+71. **TASK-071: Tarif modeli va hisoblash qoidalari (Tariff Engine)**
+    - *Tavsif:* Kunduzgi (08:00-20:00: 5000 so'm), tungi (20:00-08:00: 3000 so'm), EV (+10000 so'm) stavkalari.
+    - *Qatlam:* Python / Algoritm | *SP:* 4
 
-72. **TASK-072: Avtomatik narx hisoblash biznes logikasi funksiyasi**
-    - *Tavsif:* Kirish va chiqish daqiqalariga qarab 100% aniqlikda so'mda hisoblash algoritmi.
-    - *Qatlam:* Python / Billing | *SP:* 4
+72. **TASK-072: Dastlabki 15 daqiqalik bepul muddat (Grace Period)**
+    - *Tavsif:* 15 daqiqa ichida kirib-chiqqan transportlar uchun to'lov summasi 0 so'm hisoblanishi.
+    - *Qatlam:* Algoritm | *SP:* 2
 
-73. **TASK-073: To'lov tranzaksiyalari modeli (`PaymentTransaction`)**
-    - *Tavsif:* `provider: PAYME/CLICK`, `amount`, `status: PENDING/PAID/FAILED/REFUNDED`, `fiscal_sign`.
-    - *Qatlam:* DB / Models | *SP:* 3
+73. **TASK-073: To'lovdan keyingi 15 daqiqalik chiqish imtiyozi (Exit Grace)**
+    - *Tavsif:* To'lov qilgandan keyin shlagbaumgacha yetib borish uchun beriladigan bepul darcha.
+    - *Qatlam:* Algoritm | *SP:* 3
 
-74. **TASK-074: Payme Sandbox Merchant API integratsiyasi**
-    - *Tavsif:* `CheckPerformTransaction`, `CreateTransaction`, `PerformTransaction` metodlari realizatsiyasi.
-    - *Qatlam:* Python / Payme | *SP:* 5
+74. **TASK-074: Payme va Click Sandbox integratsiyasi**
+    - *Tavsif:* Merchant API, tranzaksiya yaratish va webhook callback qayta ishlash.
+    - *Qatlam:* Billing / Integratsiya | *SP:* 5
 
-75. **TASK-075: Click Sandbox Shop API integratsiyasi**
-    - *Tavsif:* `Prepare` va `Complete` so'rovlarini qabul qiluvchi xavfsiz webhook endpointlari.
-    - *Qatlam:* Python / Click | *SP:* 5
+75. **TASK-075: Tranzaksiyalar bazasi va fiskal chek modeli**
+    - *Tavsif:* `transactions` jadvali (`amount`, `provider`, `duration`, `status`, `fiscal_sign`).
+    - *Qatlam:* DB / Models | *SP:* 4
 
-76. **TASK-076: O'zbekiston Davlat Soliq Qo'mitasi Fiskal Chek ma'lumotlari modeli**
-    - *Tavsif:* MXIK kodi, QQS stavkasi, fiskal belgi, QR-link simulyatsiya modeli.
-    - *Qatlam:* Python / Fiscal | *SP:* 4
+76. **TASK-076: Chiqishda to'lov tekshiruvi (Gate Payment Verifier)**
+    - *Tavsif:* Shlagbaum oldiga kelgan transportning to'lov holatini tekshirish.
+    - *Qatlam:* Gate Controller | *SP:* 3
 
-77. **TASK-077: Chiqish uchun bepul oraliq (Exit Grace Window)**
-    - *Tavsif:* To'lov amalga oshirilgach, mashina chiqib ketishi uchun 10-15 daqiqa bepul vaqt berish logikasi.
-    - *Qatlam:* Python / Billing | *SP:* 3
+77. **TASK-077: To'lov tizimi ishlamay qolgandagi Post-Pay himoyasi (10 Min SLA)**
+    - *Tavsif:* Chiqishda bank API uzilsa, haydovchi 10 daqiqadan ko'p qolmasligi uchun elektron qarz kvitansiyasi berib chiqarish.
+    - *Qatlam:* SLA / Fail-Safe | *SP:* 4
 
-78. **TASK-078: Tranzaksiya holatini tekshirish va to'lov kvitansiyasi API**
-    - *Tavsif:* To'lov muvaffaqiyatli o'tgach raqamli chek ma'lumotlarini JSON/PDF shaklda qaytarish.
-    - *Qatlam:* Python / API | *SP:* 3
+78. **TASK-078: Kassa smenasi va operator balansi hisoboti**
+    - *Tavsif:* Smena yakunida naqd pul va onlayn to'lovlar summasini solishtirish.
+    - *Qatlam:* Finance | *SP:* 3
 
-79. **TASK-079: To'lov qaytarish (Refund) va xatoliklarni qayta ishlash mexanizmi**
-    - *Tavsif:* Sessiya xato bo'lganda yoki bekor qilinganda tranzaksiyani xavfsiz yopish.
-    - *Qatlam:* Python / Billing | *SP:* 3
+79. **TASK-079: Chegirma va vaucherlar mexanizmi**
+    - *Tavsif:* VIP mehmonlar va xodimlar uchun 100% yoki foizli promo-kodlar.
+    - *Qatlam:* Billing | *SP:* 3
 
-80. **TASK-080: To'lov va hisob-kitoblar bo'yicha to'liq Unit testlar**
-    - *Tavsif:* Barcha vaqt kesimlari (14 min -> 0 so'm, 65 min -> 2 soatlik narx va h.k.) bo'yicha testlar.
-    - *Qatlam:* QA / Test | *SP:* 4
+80. **TASK-080: Tariff Calculator Unit testlari**
+    - *Tavsif:* Grace period, tungi/kunduzgi almashinuv, EV qo'shimchasi va kunlik maksimal to'lov testlari.
+    - *Qatlam:* Testing / QA | *SP:* 4
 
 ---
 
-## 🖥️ MODUL 9: Desktop Admin Panel (Desktop GUI) (Tasks 81–90)
+## 🖥️ MODUL 9: Desktop Admin Paneli va 4-Moliya Moduli (Tasks 81–90)
 
-81. **TASK-081: Desktop Admin ilovasi karkasini sozlash (PyQt / PySide / Electron)**
-    - *Tavsif:* Asosiy oyna, navigatsiya paneli, zamonaviy qorong'i/yorug' mavzular.
-    - *Qatlam:* Desktop / UI | *SP:* 4
-
-82. **TASK-082: Desktop ilovada kirish va rollar bo'yicha cheklovlar**
-    - *Tavsif:* Super-Admin, 2 ta Admin va 5 ta Smena Operatorlari uchun ruxsat berilgan menyularni ko'rsatish.
-    - *Qatlam:* Desktop / Auth | *SP:* 4
-
-83. **TASK-083: Operator oynasi: Jonli Kirish/Chiqish monitori (Live Traffic)**
-    - *Tavsif:* Oxirgi kirgan avtomobillar ro'yxati, davlat raqami, vaqti va biriktirilgan sloti.
+81. **TASK-081: Desktop Admin karkasini sozlash (PyQt6 / C++ Qt)**
+    - *Tavsif:* Zamonaviy Figma/Dribbble minimalist dizayni, container shadowlar, sidebar va header.
     - *Qatlam:* Desktop / UI | *SP:* 5
 
-84. **TASK-084: Operator uchun shlagbaumni qo'lda ochish tugmasi (Manual Override)**
-    - *Tavsif:* Favqulodda holatda operator bitta tugma bilan shlagbaumni ochishi va sababini yozishi (Audit).
-    - *Qatlam:* Desktop / Action | *SP:* 3
+82. **TASK-082: 7 ta to'liq navigatsiya bo'limini tartiblash**
+    - *Tavsif:* 1.Dashboard, 2.Xarita, 3.Kameralar, **4.Moliya va Tranzaksiyalar (aynan 4-o'rinda!)**, 5.Sessiyalar, 6.Xodimlar, 7.Sozlamalar.
+    - *Qatlam:* Desktop / Navigation | *SP:* 3
 
-85. **TASK-085: 2D Interaktiv Parkovka Slotlari xaritasi (Visual Grid)**
-    - *Tavsif:* Yashil (Bo'sh), Qizil (Band), Sariq (Bron) ranglarda jonli yangilanuvchi slotlar sxemasi.
-    - *Qatlam:* Desktop / Canvas | *SP:* 5
+83. **TASK-083: 4-Moliya moduli: Kunlik, haftalik va oylik analitika kartochkalari**
+    - *Tavsif:* Deep Slate Gradient (`#0F172A` -> `#0066FF`), Payme, Click, Naqd va Uzum to'lovlari monitoringi.
+    - *Qatlam:* Desktop / Finance | *SP:* 5
 
-86. **TASK-086: Admin uchun Parkovka va Slotlar CRUD tahrirlash oynasi**
-    - *Tavsif:* 2 ta Admin o'z filialidagi slotlarni tahrirlashi, vaqtincha yopishi yoki ta'mirlash holatiga o'tkazishi.
-    - *Qatlam:* Desktop / CRUD | *SP:* 4
+84. **TASK-084: 4-Moliya moduli: Native 7 kunlik bar chart grafigi**
+    - *Tavsif:* So'nggi 7 kunlik daromad dinamikasi, Y-o'qi chiziqlari va joriy kun ustuni ajralib turuvchi vektorli grafik.
+    - *Qatlam:* Desktop / Charts | *SP:* 5
 
-87. **TASK-087: Super-Admin uchun Xodimlar (Operatorlar) boshqaruv bo'limi**
-    - *Tavsif:* Yangi operatorlarni qo'shish, smenaga tayinlash, parolini yangilash interfeysi.
-    - *Qatlam:* Desktop / Admin | *SP:* 3
+85. **TASK-085: 4-Moliya moduli: Excel/CSV rasmiy eksporti**
+    - *Tavsif:* Excelda buzilmasdan ochiladigan UTF-8 BOM (`utf-8-sig`) va `;` ajratgichli moliyaviy hisobot eksporti.
+    - *Qatlam:* Desktop / Export | *SP:* 4
 
-88. **TASK-088: Moliyaviy tahlil va daromadlar dashboardi (Charts & Stats)**
-    - *Tavsif:* Kunlik, haftalik tushumlar, Payme/Click to'lovlari taqsimoti, eng gavjum soatlar grafigi.
-    - *Qatlam:* Desktop / Charts | *SP:* 4
+86. **TASK-086: 4-Moliya moduli: Super-Admin tariflarni yangilash modali**
+    - *Tavsif:* Soatbay, daqiqabay, EV va tungi stavkalarni faqat Super-Admin tomonidan tahrirlash dialogi.
+    - *Qatlam:* Desktop / Modal | *SP:* 4
 
-89. **TASK-089: Hisobotlarni Excel va PDF formatida eksport qilish**
-    - *Tavsif:* Smena hisoboti, moliya va to'lovlar reyestrini faylga yuklab olish moduli.
-    - *Qatlam:* Desktop / Export | *SP:* 3
+87. **TASK-087: RBAC qulflari (Oddiy Admin uchun 6- va 7-bo'limlar qulfi 🔒)**
+    - *Tavsif:* Oddiy admin kirganda Xodimlar va Sozlamalarga qulf belgisi qo'yish, bosilganda ruxsat taqiqlanganligi dialogini chiqarish.
+    - *Qatlam:* Desktop / Security | *SP:* 3
 
-90. **TASK-090: Desktop ilovani Windows uchun o'rnatuvchi (Installer / .exe) paketlash**
-    - *Tavsif:* PyInstaller yoki Inno Setup orqali operatorlar kompyuteriga o'rnatiladigan tayyor `.exe`.
-    - *Qatlam:* Desktop / Build | *SP:* 4
+88. **TASK-088: 4 qavatli 3D Izometrik xarita va avtomobil modellari**
+    - *Tavsif:* Har bir qavatda avto modellari, quvvatlash stansiyasi, jonli timerlar va zoom in/out funksiyasi.
+    - *Qatlam:* Desktop / 3D Map | *SP:* 8
+
+89. **TASK-089: Jonli avto raqamlari (Monospace stiker dizayni)**
+    - *Tavsif:* O'zbekiston davlat raqamlari uchun maxsus monospace ramkali stiker vizualizatsiyasi.
+    - *Qatlam:* Desktop / Styling | *SP:* 2
+
+90. **TASK-090: Windows uchun `Parkly_Admin.bat` ishga tushirish skripti**
+    - *Tavsif:* Ilovani 1-klik bilan avtomatik ochuvchi terminal skripti.
+    - *Qatlam:* Deployment / Windows | *SP:* 2
 
 ---
 
-## 🛡️ MODUL 10: Sifat Nazorati (QA), Xavfsizlik va Taqdimot (Tasks 91–100)
+## 🛡️ MODUL 10: Sifat Nazorati (QA), Testlar va Taqdimot (Tasks 91–100)
 
-91. **TASK-091: E2E (End-to-End) Tizimli test-case'lar yozish**
-    - *Tavsif:* "Mashina keldi -> Simulyator bildirdi -> Slot band bo'ldi -> Chiqdi -> Payme to'landi -> Shlagbaum ochildi".
-    - *Qatlam:* QA / E2E | *SP:* 5
+91. **TASK-091: 20 ta Unit va Integratsion testlarni to'liq qamrab olish**
+    - *Tavsif:* `test_algorithms.py`, `test_rbac_finance.py`, `test_vision_pipeline.py` testlarining 100% yashil o'tishi.
+    - *Qatlam:* QA / Automation | *SP:* 4
 
-92. **TASK-092: API Rate Limiting va Brute-Force himoyasi**
-    - *Tavsif:* Login va to'lov endpointlariga limit o'rnatish (masalan: daqiqasiga 10 ta so'rov).
-    - *Qatlam:* Security / Python | *SP:* 3
+92. **TASK-092: 10 Daqiqalik Maksimal Kutish (SLA Fail-Safe) Unit Testlari**
+    - *Tavsif:* `evaluate_wait_time_sla` ning 3m, 5m, 8m va 10.5m holatlarini avtotest bilan sinash.
+    - *Qatlam:* Testing / SLA | *SP:* 3
 
-93. **TASK-093: SQL Injection va XSS xavfsizlik auditi**
-    - *Tavsif:* Barcha kiruvchi parametrlarni Pydantic va SQLAlchemy orqali to'liq sanitizatsiya qilish.
-    - *Qatlam:* Security / Audit | *SP:* 3
+93. **TASK-093: RBAC Ruxsatlar Matritsasi avtotestlari**
+    - *Tavsif:* Super-Admin 7 modulga kirishi, Oddiy Admin esa 6- va 7-moduldan bloklanishi testlari.
+    - *Qatlam:* Testing / Security | *SP:* 3
 
-94. **TASK-094: Tarmoq uzilishi va tizim tiklanishi (Disaster Recovery Test)**
-    - *Tavsif:* Simulyator yoki baza 30 soniyaga o'chib qolganda tizimning xatosiz qayta tiklanishini sinash.
-    - *Qatlam:* Reliability / QA | *SP:* 4
+94. **TASK-094: Vision & ANPR kadrlar oqimi sinovi**
+    - *Tavsif:* 6.78 ms kadr tezligi, temporal voting konsensusi va O'zbekiston raqamlari regex sinovi.
+    - *Qatlam:* Testing / Vision | *SP:* 3
 
-95. **TASK-095: API Swagger / OpenAPI hujjatlarini to'liq tavsiflash**
-    - *Tavsif:* `/docs` sahifasida har bir endpoint uchun namunaviy JSON, tavsif va xato kodlarini keltirish.
-    - *Qatlam:* Docs / OpenAPI | *SP:* 3
+95. **TASK-095: SQL Injection va Xavfsizlik auditi**
+    - *Tavsif:* Barcha query parametrlarini SQL inyeksiyalardan tozalash va tekshirish.
+    - *Qatlam:* Security | *SP:* 3
 
-96. **TASK-096: Operator va Admin uchun qo'llanma (User Manual)**
-    - *Tavsif:* Desktop ilovadan foydalanish bo'yicha skrinshotli PDF yo'riqnoma.
-    - *Qatlam:* Docs / Guide | *SP:* 3
+96. **TASK-096: Xotira va resurslar auditi (Memory Leak Test)**
+    - *Tavsif:* Simulyator va desktop ilovani 1 soat davomida ishlatib, RAM miqdorini nazorat qilish.
+    - *Qatlam:* Performance | *SP:* 3
 
-97. **TASK-097: Ishga tushirish va deploy qilish bo'yicha DevOps qo'llanmasi**
-    - *Tavsif:* Serverda barcha konteynerlar va simulyatorni bir martada ishga tushirish yo'riqnomasi.
-    - *Qatlam:* DevOps / Docs | *SP:* 2
+97. **TASK-097: Foydalanuvchi va Operator qo'llanmasi (User Manual)**
+    - *Tavsif:* Tizimdan foydalanish bo'yicha illyustratsiyali rasmiy qo'llanma.
+    - *Qatlam:* Docs | *SP:* 3
 
-98. **TASK-098: Loyiha GitHub README va arxitektura fayllarini yakuniy yangilash**
-    - *Tavsif:* Barcha havolalar, status belgilari (badges) va jamoa ma'lumotlarini to'ldirish.
-    - *Qatlam:* Docs / GitHub | *SP:* 2
+98. **TASK-098: Taskcafe & GitHub Projects yakuniy sinxronizatsiyasi**
+    - *Tavsif:* Barcha 100 ta vazifaning kartochkalar holati, teglar va assigneelari tekshiruvi.
+    - *Qatlam:* PM / GitHub | *SP:* 2
 
-99. **TASK-099: Jonli Demo ssenariysi va video taqdimot tayyorlash**
-    - *Tavsif:* Simulyator va Desktop Admin birgalikda real vaqtda ishlashini ko'rsatuvchi 3-5 daqiqalik demo.
-    - *Qatlam:* Presentation / Demo | *SP:* 4
+99. **TASK-099: Demo video va interaktiv taqdimot tayyorlash**
+    - *Tavsif:* Shlagbaum, 3D izometrik xarita, ANPR kamera va 4-Moliya bo'limi ishlashini namoyish etuvchi video.
+    - *Qatlam:* Presentation | *SP:* 4
 
-100. **TASK-100: Yakuniy loyiha himoyasi slaydlari (Pitch Deck / Presentation)**
-     - *Tavsif:* Muammo, yechim, arxitektura, C++/Python simulyator yutug'i va moliyaviy natijalarni jamlagan slaydlar.
-     - *Qatlam:* Presentation / PPTX | *SP:* 4
+100. **TASK-100: Yakuniy Reliz va Versiya Tag (`v1.0.0-mvp`)**
+     - *Tavsif:* Kod bazasini muzlatish (Code Freeze), reliz tagini qo'yish va GitHub Releases sahifasiga joylash.
+     - *Qatlam:* Release / Management | *SP:* 2

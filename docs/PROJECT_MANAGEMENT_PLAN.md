@@ -1,109 +1,93 @@
 # 📊 Parkly.uz — Loyihani Boshqarish Rejasi (Project Management Plan)
 
-> **Loyiha:** Parkly.uz (Smart Parking Management System)  
-> **Metodologiya:** Agile / Scrum  
-> **Hujjat Maqsadi:** Loyihaning 2 oylik (8 hafta, 4 sprint) jarayonini tartibli, sifatli va o'z vaqtida amalga oshirish qoidalari.
+> **Loyiha:** Parkly.uz — Smart Parking Management System  
+> **Loyiha kodi:** PRK-UZ-2026  
+> **Metodologiya:** Agile / Scrum (2 haftalik iteratsiyalar)  
+> **Vazifalar Boshqaruvi:** Taskcafe va GitHub Projects Kanban Doskasi  
+> **Qat'iy Cheklov:** Foydalanuvchining maksimal kutish vaqti ≤ 10 daqiqa (User Wait Max 10 Min)
 
 ---
 
 ## 1. Boshqaruv Metodologiyasi (Scrum Framework)
 
-Loyiha **2 haftalik Sprintlar** asosida boshqariladi:
+Loyiha qat'iy **2 haftalik iteratsiyalar (Sprintlar)** asosida amalga oshiriladi:
 
 ```
-[ Sprint Rejalashtirish ] ──► [ 14 Kunlik Ish Jarayoni ] ──► [ Sprint Review (Demo) ] ──► [ Retrospektiva ]
-       (Dushanba)              (Har kuni 15 min Standup)              (Juma)                   (Juma)
+┌─────────────────────────┐
+│ 1. Sprint Rejalashtirish │ (Har sprint boshida: Dushanba, 10:00 - 11:00)
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ 2. 14 Kunlik Ish Sikli  │ ──► Har kuni: 15 daqiqalik Daily Standup (10:00)
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ 3. Sprint Demo (Review) │ (Har sprint oxirida: Juma, 16:00 - 17:00)
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│ 4. Retrospektiva        │ (Demo yakunida: Juma, 17:00 - 17:30)
+└─────────────────────────┘
 ```
 
 ### Scrum Marosimlari (Ceremonies):
-1. **Sprint Planning (Sprintni rejalashtirish):**
-   - Har bir yangi sprintning birinchi dushanba kuni (1 soat).
-   - Backlog'dan navbatdagi vazifalar tanlanadi va har bir jamoa a'zosiga biriktiriladi.
-2. **Daily Standup (Kunlik tezkor yig'ilish):**
-   - Har kuni soat 10:00 da (15 daqiqa, Telegram / Google Meet).
-   - 3 ta savol:
-     * *Kecha nima qildim?*
-     * *Bugun nima qilaman?*
-     * *Qanday to'siq yoki muammolar bor?*
-3. **Sprint Review & Demo (Sprint natijalari namoyishi):**
-   - Sprintning oxirgi juma kuni (45 daqiqa).
-   - Ishlab chiquvchilar tayyor bo'lgan dasturiy qismlarni (ishlab turgan kodni) Product Ownerga ko'rsatadi.
-4. **Sprint Retrospective (Retrospektiva):**
-   - Demo tugagach (30 daqiqa).
-   - Nima yaxshi bo'ldi? Nimani yaxshilash kerak? Keyingi sprintda nimani o'zgartiramiz?
+1. **Sprint Planning:** Product Owner va PM rahbarligida navbatdagi sprint uchun vazifalar (User Stories & Tasks) tanlanadi, Story Point baholanadi va har bir jamoa a'zosiga biriktiriladi.
+2. **Daily Standup:** Kunlik 15 daqiqalik tezkor yig'ilish: kechagi natija, bugungi reja va to'siqlar muhokamasi.
+3. **Sprint Review (Demo):** Ishlab chiquvchilar tayyor bo'lgan dasturiy qismlarni (API, simulyator, ANPR, Desktop oynasi) Product Ownerga real ishchi holatda ko'rsatadi.
+4. **Sprint Retrospective:** Jamoa jarayonini tahlil qilish va takomillashtirish.
 
 ---
 
-## 2. Jamoa RACI Matritsasi
+## 2. Jamoa RACI Mas'uliyat Matritsasi
 
-Loyiha jarayonida har bir vazifa bo'yicha mas'uliyat quyidagi xalqaro matritsa asosida taqsimlanadi:
-- **R (Responsible):** To'g'ridan-to'g'ri bajaruvchi dasturchi
-- **A (Accountable):** Natija uchun yakuniy javobgar shaxs (faqat 1 kishi)
+- **R (Responsible):** Vazifani bevosita bajaruvchi dasturchi
+- **A (Accountable):** Natija uchun yakuniy javobgar yagona shaxs
 - **C (Consulted):** Maslahat beruvchi mutaxassis
-- **I (Informed):** Xabardor qilib boriladigan shaxs
+- **I (Informed):** Jarayon haqida xabardor qilib boriladigan shaxs
 
-| Bosqich / Vazifa | Product Owner (Siz) | Project Manager | Lead / Senior Dev | Backend Dev | C++ Dev | Desktop Dev | QA Tester |
+| Loyiha Moduli / Jarayon | Product Owner (erjigitvv5) | Project Manager | Lead / Senior Dev | Backend Dev | C++ Dev | Desktop Dev | QA Tester |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Loyiha maqsadi va Charter** | **A** | R | C | I | I | I | I |
-| **Sprint Backlog tasdiqlash** | **A** | R | C | C | C | C | C |
-| **Arxitektura va Algoritmlar** | I | I | **A / R** | R | R | C | C |
-| **Backend & DB yaratish** | I | I | A | **R** | C | C | I |
-| **Sensor Simulyatori (CLI)** | I | I | A | C | **R** | C | I |
-| **Desktop Admin Panel** | C | I | A | C | I | **R** | I |
-| **Payme & Click to'lovlari** | C | I | A | **R** | I | I | C |
-| **Sifat nazorati va Testlash** | I | I | A | C | C | C | **R** |
-| **Yakuniy Release va Demo** | **A** | R | R | R | R | R | R |
+| **Project Charter va Maqsadlar** | **A** | R | C | I | I | I | I |
+| **Taskcafe & Backlog Boshqaruvi** | **A** | R | C | C | C | C | C |
+| **Arxitektura va 4 ta Algoritm** | I | I | **A / R** | R | R | C | C |
+| **Computer Vision & ANPR Moduli** | I | I | **A** | C | R | C | R |
+| **10-Minutlik Kutish SLA Watchdog**| I | I | **A** | R | R | R | R |
+| **PostgreSQL & Core Backend API** | I | I | A | **R** | C | C | I |
+| **C/C++ & CLI Sensor Simulyatori**| I | I | A | C | **R** | C | I |
+| **Desktop Admin Boshqaruv Paneli**| C | I | A | C | I | **R** | I |
+| **4-Moliya va Tranzaksiyalar** | C | I | A | **R** | I | **R** | C |
+| **Sifat Nazorati va Sinovlar** | I | I | A | C | C | C | **R** |
+| **Yakuniy Reliz va Taqdimot** | **A** | R | R | R | R | R | R |
 
 ---
 
-## 3. Kommunikatsiya Rejasi (Communication Plan)
+## 3. Kommunikatsiya va Vositalar Rejasi (Communication Plan)
 
-| Kanal / Vosita | Maqsadi | Kimlar qatnashadi | Qachon / Qancha vaqtda |
+| Kanal / Vosita | Vazifasi va Maqsadi | Ishtirokchilar | Qachon / Qancha vaqtda |
 | :--- | :--- | :--- | :--- |
-| **GitHub Projects** | Vazifalar holati (Kanban doska) | Barcha jamoa | Real-vaqtda (har kuni yangilanadi) |
-| **Telegram Tech Guruhi** | Tezkor texnik savollar va muhokamalar | Barcha jamoa | Ish vaqti davomida doimiy |
-| **GitHub Pull Requests** | Kod tekshiruvi (Code Review) | Lead Dev, Dasturchilar | Har bir feature topshirilganda |
-| **Google Meet** | Standup va Rejalashtirish yig'ilishlari | Barcha jamoa | Belgilangan jadval asosida |
+| **Taskcafe & GitHub Projects** | Kanban doskasi (Tasklar, SLA taymerlari, swimlanelar) | Barcha jamoa | Real-vaqtda (har kuni yangilanadi) |
+| **Telegram Tech Guruh** | Tezkor texnik savollar, blokirlar va xabarlar | Barcha jamoa | Doimiy (ish vaqti) |
+| **GitHub Pull Requests** | Kod tekshiruvi (Code Review) | Lead Dev, Dasturchilar | Har bir yangi kod topshirilganda |
+| **Google Meet** | Standup va Rejalashtirish majlislari | Barcha jamoa | Dushanba va Juma (jadval bo'yicha) |
 
 ---
 
-## 4. Sifatni Boshqarish Rejasi (Quality Management Plan)
+## 4. Sifatni Boshqarish Rejasi va Qat'iy SLA Qoidasi
 
 ### A. Kod sifati standartlari:
-- Python kodi **PEP8** qoidalariga (`ruff` / `black`) mos kelishi shart.
-- C++ kodi Google C++ Style Guide asosida formatlanishi kerak.
-- Algoritmlar va biznes mantiqning Unit Test qamrovi **kamida 80%** bo'lishi shart.
+- Python kodi **PEP8** qoidalariga mos kelishi shart.
+- C++ kodi Google C++ Style Guide talablariga mos yoziladi.
+- Barcha algoritmlar va modullar uchun Unit Test qamrovi **100% yashil** bo'lishi shart (`pytest` va `unittest`).
 
-### B. Pull Request (PR) va Code Review qoidalari:
-1. Hech kim o'z kodini to'g'ridan-to'g'ri `main` tarmog'iga merge qila olmaydi.
-2. Har bir PR ochilganda avtomatlashtirilgan CI testlari yashil (`PASS`) bo'lishi shart.
-3. Kamida **1 nafar Senior / Lead dasturchi** kodni ko'rib chiqib tasdiqlashi (Approve) lozim.
+### B. ⏱️ 10 Daqiqalik Maksimal Kutish (SLA Qoidasi):
+- Hech qanday vaziyatda avtomobil kirish/chiqish to'sig'ida 10 daqiqadan ko'p ushlab turilishi mumkin emas.
+- 5 daqiqada sariq ogohlantirish, 7 daqiqada qizil favqulodda signal, 10 daqiqada esa Fail-Safe avtomatik ochilish kafolatlangan.
 
 ### C. Definition of Done (DoD — Ish bitganlik mezoni):
-Biror User Story quyidagi shartlar bajarilgandagina **Done** deb qabul qilinadi:
-- [x] Acceptance Criteria talablari to'liq bajarilgan.
-- [x] Unit/Integration testlar yozilgan va muvaffaqiyatli o'tgan.
+Vazifa faqat quyidagi shartlar to'liq bajarilgandagina **Done** ustuniga o'tkaziladi:
+- [x] Acceptance Criteria (DoD) talablari 100% bajarilgan.
+- [x] 10 minutlik maksimal kutish chegarasi tekshirilgan va tasdiqlangan.
+- [x] Barcha tegishli Unit va integratsion testlar yozilgan va muvaffaqiyatli o'tgan.
 - [x] Kod review'dan o'tgan va tasdiqlangan.
-- [x] Funksiya `develop` yoki `main` tarmog'iga qo'shilgan.
-- [x] Foydalanish hujjatlari (kerak bo'lsa) yangilangan.
-
----
-
-## 5. Xatarlar va Muammolarni Boshqarish (Risk & Issue Management)
-
-```
-[ Muammo yuzaga keldi ] ──► [ Dasturchi 2 soat ichida yecha olmadi ] ──► [ Lead Dev yordamga keladi ] ──► [ PM / Owner xabardor qilinadi ]
-```
-
-- Agar dasturchi texnik muammo sababli 2 soatdan ortiq ushlanib qolsa, buni yashirmasdan Standup yoki umumiy chatda bildiradi.
-- Lead Developer texnik yordam ko'rsatadi.
-- Agar muammo muddatga ta'sir qilsa, PM vazifaning ustuvorligini qayta ko'rib chiqadi (Scope Management).
-
----
-
-## 6. O'zgarishlarni Boshqarish Tartibi (Change Control)
-
-Agarda loyihaga yangi talab (masalan, yangi to'lov turi yoki qo'shimcha interfeys) qo'shilishi kerak bo'lsa:
-1. Yangi talab faqat **Product Owner (Siz)** tomonidan taklif qilinadi.
-2. PM va Lead Dev uning qancha Story Point (SP) va vaqt olishini baholaydi.
-3. Agar yangi vazifa kiritilsa, jamoaning yuklamasi oshib ketmasligi uchun joriy sprintdan unga teng hajmdagi past ustuvorlikdagi (`Could Have`) vazifa keyingi sprintga suriladi.
+- [x] Kod `main` yoki `Mirhamid` tarmog'iga merge qilingan.
+- [x] Hujjatlar (`BACKLOG.md`, `TASKCAFE_BOARD.md`, `README.md`) yangilangan.
