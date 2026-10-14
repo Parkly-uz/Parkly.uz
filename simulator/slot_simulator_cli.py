@@ -8,6 +8,13 @@ import random
 import sys
 from datetime import datetime
 
+# Windows konsolida UTF-8 xavfsiz chiqarish
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Slotlar ro'yxati (Aniq raqamlar bo'yicha)
 SLOTS = [
     {"slot": "A-101", "type": "REGULAR", "status": "FREE", "plate": None},
@@ -45,7 +52,7 @@ def render_dashboard():
     """Konsolda jonli holat jadvalini ko'rsatish"""
     print("\033[H\033[J", end="")  # Ekranni tozalash
     print("=" * 68)
-    print(" 🚗 PARKLY.UZ — VIRTUAL SENSOR VA SLOT SIMULYATORI (CLI ENGINE)")
+    print(" [PARKLY] PARKLY.UZ — VIRTUAL SENSOR VA SLOT SIMULYATORI (CLI ENGINE)")
     print(f" Vaqt: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Hudud: Tashkent Central (Lot #1)")
     print("=" * 68)
     print(f"{'SLOT':<10} | {'TURI':<14} | {'HOLATI':<16} | {'TRANSPORT RAQAMI':<18}")
@@ -65,7 +72,7 @@ def render_dashboard():
         print(f"{item['slot']:<10} | {item['type']:<14} | {status_colored:<25} | {plate_str:<18}")
 
     print("=" * 68)
-    print("💡 To'xtatish uchun: Ctrl + C bosing")
+    print("[INFO] To'xtatish uchun: Ctrl + C bosing")
 
 def run_simulation(interval=2.0):
     print("Simulyator ishga tushmoqda...")
@@ -98,7 +105,7 @@ def run_simulation(interval=2.0):
             render_dashboard()
             time.sleep(interval)
     except KeyboardInterrupt:
-        print("\n\n⏹️ Simulyator muvaffaqiyatli to'xtatildi.")
+        print("\n\n[INFO] Simulyator muvaffaqiyatli to'xtatildi.")
 
 if __name__ == "__main__":
     interval_sec = 2.0

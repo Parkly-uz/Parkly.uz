@@ -56,9 +56,9 @@ void MainWindow::setupUI() {
     m_contentStack->addWidget(createDashboardPage()); // Index 0: Bosh Sahifa
     m_contentStack->addWidget(createMapPage());       // Index 1: 2D Xarita
     m_contentStack->addWidget(createCameraPage());    // Index 2: Kameralar & ANPR
-    m_contentStack->addWidget(createStaffPage());     // Index 3: Xodimlar
-    m_contentStack->addWidget(createFinancePage());   // Index 4: Moliya & Kassa
-    m_contentStack->addWidget(createSettingsPage());  // Index 5: Sozlamalar
+    m_contentStack->addWidget(createFinancePage());   // Index 3: 4. Moliya & Tranzaksiyalar
+    m_contentStack->addWidget(createStaffPage());     // Index 4: 5. Xodimlar (RBAC)
+    m_contentStack->addWidget(createSettingsPage());  // Index 5: 6. Tizim Sozlamalari
 
     contentLayout->addWidget(m_contentStack, 1);
     rootLayout->addLayout(contentLayout, 1);
@@ -198,12 +198,12 @@ QWidget* MainWindow::createTopHeader() {
         if (id == 0) btn->setChecked(true);
     };
 
-    addPill(0, "Asosiy Ko'rsatkichlar");
-    addPill(1, "2D Xarita");
-    addPill(2, "Kameralar");
-    addPill(3, "Xodimlar");
-    addPill(4, "Kassa & Moliya");
-    addPill(5, "Sozlamalar");
+    addPill(0, "1. Asosiy Ko'rsatkichlar");
+    addPill(1, "2. 2D Xarita");
+    addPill(2, "3. Kameralar");
+    addPill(3, "4. Moliya va Tranzaksiyalar");
+    addPill(4, "5. Xodimlar (RBAC)");
+    addPill(5, "6. Sozlamalar");
 
     connect(m_topPillGroup, &QButtonGroup::idClicked, this, &MainWindow::onNavButtonClicked);
     layout->addLayout(pillsLayout);
@@ -657,19 +657,23 @@ void MainWindow::onNavButtonClicked(int index) {
 }
 
 void MainWindow::applyRolePermissions() {
-    if (m_role == "OPERATOR") {
-        // Operatorga Moliya (4), Xodimlar (3) va Sozlamalar (5) yopiq
-        if (m_topPillGroup->button(3)) m_topPillGroup->button(3)->setEnabled(false);
+    // Hammasini yoqib olamiz
+    for (int i = 0; i <= 5; ++i) {
+        if (m_topPillGroup->button(i)) m_topPillGroup->button(i)->setEnabled(true);
+        if (m_navGroup->button(i)) m_navGroup->button(i)->setEnabled(true);
+    }
+
+    if (m_role == "ADMIN") {
+        // Oddiy Adminga: 4. Xodimlar (Index 4) va 5. Sozlamalar (Index 5) yopiq
         if (m_topPillGroup->button(4)) m_topPillGroup->button(4)->setEnabled(false);
         if (m_topPillGroup->button(5)) m_topPillGroup->button(5)->setEnabled(false);
-
-        if (m_navGroup->button(3)) m_navGroup->button(3)->setEnabled(false);
         if (m_navGroup->button(4)) m_navGroup->button(4)->setEnabled(false);
         if (m_navGroup->button(5)) m_navGroup->button(5)->setEnabled(false);
-    } else {
-        for (int i = 0; i <= 5; ++i) {
-            if (m_topPillGroup->button(i)) m_topPillGroup->button(i)->setEnabled(true);
-            if (m_navGroup->button(i)) m_navGroup->button(i)->setEnabled(true);
+    } else if (m_role == "OPERATOR") {
+        // Operatorga: Moliya (Index 3), Xodimlar (Index 4) va Sozlamalar (Index 5) yopiq
+        for (int i = 3; i <= 5; ++i) {
+            if (m_topPillGroup->button(i)) m_topPillGroup->button(i)->setEnabled(false);
+            if (m_navGroup->button(i)) m_navGroup->button(i)->setEnabled(false);
         }
     }
 }

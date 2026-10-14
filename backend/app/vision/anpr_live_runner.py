@@ -154,17 +154,28 @@ class LiveANPRRunner:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2
                     )
 
-                    cv2.imshow("Parkly.uz - Real-Time Live ANPR", display_frame)
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord('q'):
-                        break
+                    try:
+                        cv2.imshow("Parkly.uz - Real-Time Live ANPR", display_frame)
+                        key = cv2.waitKey(1) & 0xFF
+                        if key == ord('q'):
+                            break
+                    except cv2.error:
+                        if not self.headless:
+                            self.headless = True
+                            print("[INFO] GUI grafik oynasi ochilmadi (Headless rejim). Natijalar konsolga yozilmoqda.")
 
         except KeyboardInterrupt:
-            print("\n⏹️ ANPR to'xtatildi.")
+            print("\n[INFO] ANPR to'xtatildi.")
         finally:
             if cap:
-                cap.release()
-            cv2.destroyAllWindows()
+                try:
+                    cap.release()
+                except Exception:
+                    pass
+            try:
+                cv2.destroyAllWindows()
+            except Exception:
+                pass
 
     def _generate_synthetic_frame(self) -> np.ndarray:
         """Kamera ulanmagan kompyuterlar uchun virtual sinov kadri"""

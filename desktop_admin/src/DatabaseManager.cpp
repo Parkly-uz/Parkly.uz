@@ -34,16 +34,16 @@ void DatabaseManager::initMockData() {
         {12, 1, "VIP", "VIP-03", "VIP_STAFF", "RESERVED", 550, 240, 80, 140, ""}
     };
 
-    // 1 ta Super-Admin, 2 ta Admin va 5 ta Smena Operatorlari
+    // Huquqlar Matritsasi: 2 ta Super-Admin, 4 ta Oddiy Admin va 2 ta Smena Operatorlari
     m_mockStaff = {
-        {1, "super_admin", "Erjigit (Boshliq)", "SUPER_ADMIN", "Hammasi", true},
-        {2, "admin_toshkent", "Sherzod Aliyev", "ADMIN", "Filial 1", true},
-        {3, "admin_chilonzor", "Jahongir Qodirov", "ADMIN", "Filial 2", true},
-        {4, "op_smena_1", "Aziz Rustamov", "OPERATOR", "Smena 1 (08:00 - 16:00)", true},
-        {5, "op_smena_2", "Bobur Mirzayev", "OPERATOR", "Smena 2 (16:00 - 00:00)", true},
-        {6, "op_smena_3", "Dilshod Karimov", "OPERATOR", "Smena 3 (00:00 - 08:00)", true},
-        {7, "op_zaxira_1", "Farrux Yusupov", "OPERATOR", "Zaxira 1", true},
-        {8, "op_zaxira_2", "G'ayrat Xoliqov", "OPERATOR", "Zaxira 2", true}
+        {1, "admin", "Erjigit (Bosh Rahbar)", "SUPER_ADMIN", "Asosiy Boshqaruv", true},
+        {2, "superadmin2", "Sherzod Aliyev", "SUPER_ADMIN", "Tizim Arxitekturasi", true},
+        {3, "admin_yunusobod", "Jahongir Qodirov", "ADMIN", "Yunusobod Filiali", true},
+        {4, "admin_chilonzor", "Aziz Rustamov", "ADMIN", "Chilonzor Filiali", true},
+        {5, "admin_mirobod", "Bobur Mirzayev", "ADMIN", "Mirobod Filiali", true},
+        {6, "admin_sergeli", "Dilshod Karimov", "ADMIN", "Sergeli Filiali", true},
+        {7, "operator1", "Farrux Yusupov", "OPERATOR", "Smena 1 (08:00 - 20:00)", true},
+        {8, "operator2", "G'ayrat Xoliqov", "OPERATOR", "Smena 2 (20:00 - 08:00)", true}
     };
 }
 

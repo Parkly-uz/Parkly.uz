@@ -108,6 +108,22 @@ def test_gate_controller():
     print("   ✅ Gate Controller muvaffaqiyatli o'tdi!")
 
 
+import unittest
+
+class TestAlgorithms(unittest.TestCase):
+    def test_spot_allocator(self):
+        test_spot_allocator()
+
+    def test_tariff_calculator(self):
+        test_tariff_calculator()
+
+    def test_reservation_matcher(self):
+        test_reservation_matcher()
+
+    def test_gate_controller(self):
+        test_gate_controller()
+
+
 if __name__ == "__main__":
     print("\n🚀 PARKLY.UZ ALGORITMLARINI TEKSHIRISH TESTLARI BOSHLANDI:\n")
     test_spot_allocator()

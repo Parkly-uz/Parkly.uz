@@ -119,6 +119,25 @@ def test_full_pipeline():
     print(f"   ✅ To'liq Pipeline ishladi! Tezlik: {res['latency_ms']} ms, Natija: {res['final_plate']}")
 
 
+import unittest
+
+class TestVisionPipeline(unittest.TestCase):
+    def test_frame_enhancer(self):
+        test_frame_enhancer()
+
+    def test_perspective_corrector(self):
+        test_perspective_corrector()
+
+    def test_uzbekistan_ocr_regex(self):
+        test_uzbekistan_ocr_regex()
+
+    def test_temporal_tracker(self):
+        test_temporal_tracker()
+
+    def test_full_pipeline(self):
+        test_full_pipeline()
+
+
 if __name__ == "__main__":
     print("\n📷 PARKLY.UZ COMPUTER VISION & ANPR PIPELINE TESTLARI:\n")
     test_frame_enhancer()

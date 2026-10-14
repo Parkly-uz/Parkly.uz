@@ -124,5 +124,12 @@ def test_full_rbac_and_finance():
     print("BARCHA TESTLAR 100% MUVAFFAQIShIYATLI O'TDI!")
     print("==================================================")
 
+import unittest
+
+class TestRBACFinance(unittest.TestCase):
+    def test_rbac_and_finance(self):
+        test_full_rbac_and_finance()
+
+
 if __name__ == "__main__":
     test_full_rbac_and_finance()

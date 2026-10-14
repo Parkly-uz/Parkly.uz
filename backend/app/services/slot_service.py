@@ -2,6 +2,13 @@
 Parkly.uz — ParkingSlot Service (Business Logic & State Machine)
 """
 
+import sys
+import os
+
+_backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 from typing import List, Optional, Dict
 from datetime import datetime
 from app.models.parking_slot import ParkingSlot, SlotStatus, SlotType

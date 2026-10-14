@@ -9,6 +9,13 @@ Barcha 5 ta bosqichni yagona intellektual zanjirga birlashtiruvchi bosh modul:
 6. Multi-Frame Temporal Consensus
 """
 
+import sys
+import os
+
+_backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 import time
 import cv2
 import numpy as np

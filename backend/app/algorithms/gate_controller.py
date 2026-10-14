@@ -3,6 +3,13 @@ Parkly.uz — Gate & Barrier Access Control State Machine
 Kirish va chiqish shlagbaumini xavfsiz boshqarish algoritmi.
 """
 
+import sys
+import os
+
+_backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 from enum import Enum
 from datetime import datetime
 from typing import Dict, Any, Optional
