@@ -105,7 +105,27 @@ def test_gate_controller():
     assert exit_unpaid["action"] == GateAction.REQUIRE_PAYMENT
     assert exit_unpaid["amount_due"] > 0
 
-    print("   ✅ Gate Controller muvaffaqiyatli o'tdi!")
+    # 3. 10-Daqiqalik Maksimal Kutish (SLA Qoidasi) sinovi
+    sla_normal = GateController.evaluate_wait_time_sla(3.0)
+    assert sla_normal["level"] == "NORMAL"
+    assert sla_normal["force_open"] is False
+
+    sla_warn = GateController.evaluate_wait_time_sla(5.5)
+    assert sla_warn["level"] == "WARNING"
+
+    sla_urgent = GateController.evaluate_wait_time_sla(8.0)
+    assert sla_urgent["level"] == "URGENT"
+
+    sla_breach = GateController.evaluate_wait_time_sla(10.5)
+    assert sla_breach["level"] == "FAIL_SAFE_BREACH"
+    assert sla_breach["force_open"] is True
+
+    # 4. Agar to'lanmagan bo'lsa ham, 10 daqiqadan ko'p kutgan avto ochiladi (SLA fail-safe)
+    exit_10m = GateController.process_exit(session_unpaid, current_time=now, wait_minutes=10.5)
+    assert exit_10m["action"] == GateAction.OPEN_BARRIER
+    assert exit_10m.get("sla_fail_safe") is True
+
+    print("   ✅ Gate Controller (shu jumladan 10-daqiqa Max Wait SLA) muvaffaqiyatli o'tdi!")
 
 
 import unittest

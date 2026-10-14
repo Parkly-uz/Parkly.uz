@@ -70,15 +70,69 @@ class GateController:
             "is_reserved": False
         }
 
+    MAX_ALLOWED_WAIT_MINUTES = 10.0  # Qat'iy SLA: Maksimal kutish 10 daqiqa
+
+    @classmethod
+    def evaluate_wait_time_sla(cls, wait_minutes: float) -> Dict[str, Any]:
+        """
+        Foydalanuvchi kutish vaqti bo'yicha 10-daqiqalik SLA tekshiruvi:
+        - 0 - 5 min: Oddiy rejim (Yashil)
+        - 5 - 7 min: Sariq ogohlantirish (Operator ekrani)
+        - 7 - 10 min: Qizil shoshilinch xabar (Super-Admin eskalatsiyasi)
+        - >= 10 min: SLA buzilishi! Favqulodda shlagbaumni ochish (Fail-safe emergency open)
+        """
+        if wait_minutes < 5.0:
+            return {
+                "level": "NORMAL",
+                "color": "#10b981",
+                "action": "CONTINUE_PROCESSING",
+                "alert": None,
+                "force_open": False
+            }
+        elif wait_minutes < 7.0:
+            return {
+                "level": "WARNING",
+                "color": "#f59e0b",
+                "action": "NOTIFY_OPERATOR",
+                "alert": f"⚠️ DIQQAT: Haydovchi postda {wait_minutes:.1f} daqiqadan beri kutmoqda!",
+                "force_open": False
+            }
+        elif wait_minutes < cls.MAX_ALLOWED_WAIT_MINUTES:
+            return {
+                "level": "URGENT",
+                "color": "#ef4444",
+                "action": "ESCALATE_SUPER_ADMIN",
+                "alert": f"🚨 SHOSHILINCH: Kutish vaqti {wait_minutes:.1f} daqiqa! 10 daqiqalik SLA buzilish arafasida!",
+                "force_open": False
+            }
+        else:
+            return {
+                "level": "FAIL_SAFE_BREACH",
+                "color": "#7c3aed",
+                "action": "EMERGENCY_OVERRIDE_OPEN",
+                "alert": f"⛔ SLA 10-DAQIQA CHEKLOVI TO'LDI: Shlagbaum bir martalik offline-talon bilan ochildi!",
+                "force_open": True
+            }
+
     @classmethod
     def process_exit(
         cls,
         session_info: Dict[str, Any],
-        current_time: Optional[datetime] = None
+        current_time: Optional[datetime] = None,
+        wait_minutes: float = 0.0
     ) -> Dict[str, Any]:
         """
-        Chiqish to'sig'idagi mantiqiy qaror.
+        Chiqish to'sig'idagi mantiqiy qaror (10-daqiqa kutish SLA'si hisobga olinadi).
         """
+        # Agar kutish vaqti 10 daqiqadan oshsa, avtomatik chiqarib yuborish kafolatlangan
+        if wait_minutes >= cls.MAX_ALLOWED_WAIT_MINUTES:
+            return {
+                "action": GateAction.OPEN_BARRIER,
+                "message": "SLA 10-daqiqa kafolati: Shlagbaum ochildi. To'lov kvitansiyasi avto raqamiga biriktirildi.",
+                "amount_due": 0,
+                "sla_fail_safe": True
+            }
+
         if not session_info:
             return {
                 "action": GateAction.DENY_ACCESS,
