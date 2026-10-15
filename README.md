@@ -1,84 +1,82 @@
 <p align="center">
-  <img src="assets/logo.png" width="420" alt="PARKY.uz Logo" />
+  <h1 align="center">🚗 Parkly.uz — Smart Parking Management System</h1>
+  <p align="center">
+    <strong>To'liq Avtomatlashgan, Naqd pulsiz (Cashless), Operatorsiz (Unattended) Smart Parkovka Ekotizimi</strong>
+  </p>
 </p>
 
-# 🚗 Parkly.uz — Smart Parking Management System
-
-> **Parkly.uz** — Shaharlar, savdo markazlari, biznes markazlar va xususiy avtoturargohlar uchun aqlli, to'liq avtomatlashtirilgan va xavfsiz Smart Parkovka ekotizimi.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python 3.11+" />
+  <img src="https://img.shields.io/badge/FastAPI-2.0-green.svg" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/OpenCV-ANPR%20Weather-purple.svg" alt="OpenCV" />
+  <img src="https://img.shields.io/badge/SLA-Max%2010%20Min-red.svg" alt="SLA 10 Min" />
+  <img src="https://img.shields.io/badge/Tests-5%2F5%20Passing-brightgreen.svg" alt="Tests Passing" />
+</p>
 
 ---
 
 ## 📌 Loyiha haqida (Overview)
-
-Parkly.uz haydovchilar uchun bo'sh joylarni real vaqt rejimida (real-time) topish, oldindan bron qilish (booking) hamda avtomatlashtirilgan to'lovlarni amalga oshirish imkonini beradi. Avtoturargoh egalari va boshqaruvchilari uchun esa aqlli hisob-kitob, ANPR (davlat raqamini aniqlash) kamerasi integratsiyasi, to'siqlar (barrier/shlagbaum) nazorati va analitika platformasini taqdim etadi.
-
----
-
-## 🏗️ Tizim arxitekturasi va komponentlari
-
-1. **📱 Mobil ilova (Haydovchilar uchun):**
-   - Bo'sh joylar xaritasi (Google Maps / Yandex Maps integratsiyasi).
-   - Joyni oldindan band qilish (Booking).
-   - QR kod yoki avtomobil raqami orqali kirish/chiqish.
-   - Tezkor to'lovlar (Payme, Click, Uzum Pay).
-
-2. **🖥️ Web Dashboard (Admin & Operatorlar):**
-   - Parkovka to'lalik darajasi (real-time occupancy).
-   - Daromadlar, tariflar va hisobotlar tahlili.
-   - Shlagbaum va kameralarni masofadan boshqarish.
-
-3. **📷 IoT & Computer Vision (Hardware / Edge):**
-   - ANPR (Automatic Number Plate Recognition) kameralari.
-   - Ultratovush / magnit datchiklar (joy bo'shligini aniqlash).
-   - Shlagbaum kontrollerlari (MQTT / WebSocket / Modbus).
-
-4. **⚙️ Backend API:**
-   - Mikroservis / Modul-monolit arxitektura.
-   - Real-time aloqa: WebSockets / gRPC.
-   - Tranzaksiyalar xavfsizligi va audit loglar.
+**Parkly.uz** — Shaharlar, yirik savdo markazlari va biznes markazlar uchun inson omilisiz ishlovchi, ekstremal ob-havoda (yomg'ir, qor, tuman) avtomobil modeli va davlat raqamini aniqlovchi, bo'sh joylarni A* algoritmi bilan tavsiya qiluvchi hamda chiqishda haydovchini 10 daqiqadan oshiq ushlamasdan qarzga chiqaruvchi (**Fail-Safe 10-Min SLA**) zamonaviy aqlli platforma.
 
 ---
 
-## 👥 Jamoa tuzilmasi va Rollar
+## 🏛️ Tizim Arxitekturasi
 
-| Rol | GitHub Ruxsati (Permission) | Mas'uliyat |
-| :--- | :--- | :--- |
-| **Owner / Founder** | **Owner / Admin** | Loyiha egasi, yakuniy strategik qarorlar, to'liq boshqaruv |
-| **Project Manager (PM)** | **Triage / Maintain** | Vazifalarni taqsimlash, sprintlar, Milestone va Issue nazorati |
-| **Lead / Senior Dev** | **Maintain / Admin** | Arxitektura, kod sifatini nazorat qilish (Code Review), PR merge |
-| **Backend / Frontend / Mobile Devs** | **Write** | Funksional kod yozish, yangi feature branchlar, PR yaratish |
-| **QA / Tester** | **Triage / Read** | Bug reportlar ochish, release test qilish |
-
-> ⏱️ **Qat'iy SLA Cheklovi:** Foydalanuvchining maksimal kutish vaqti **≤ 10 daqiqa** (User Wait Max 10 Min).  
-> 📋 Rasmiy Backlog va User Story'lar: [BACKLOG.md](BACKLOG.md)  
-> 📌 Taskcafe / GitHub Kanban Doskasi: [TASKCAFE_BOARD.md](TASKCAFE_BOARD.md)  
-> 📑 100 ta Texnik Vazifalar Ro'yxati: [BACKLOG_100_TASKS.md](BACKLOG_100_TASKS.md)  
-> 🛡️ Huquqlar Matritsasi va Rollar: [ROLES_AND_PERMISSIONS.md](ROLES_AND_PERMISSIONS.md)  
-> 📊 Loyiha Nizomi va Boshqaruv Rejasi: [PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) | [PROJECT_MANAGEMENT_PLAN.md](docs/PROJECT_MANAGEMENT_PLAN.md)
-
----
-
-## 🌿 Git Branching Strategy (Ish jarayoni qoidasi)
-
-- `main` — Faqat barqaror, ishlab turgan production versiya (faqat PR orqali merge qilinadi, to'g'ridan-to'g'ri push taqiqlangan).
-- `develop` — Asosiy integratsiya tarmog'i (staging).
-- `feature/<vazifa-nomi>` — Yangi imkoniyatlar uchun alohida tarmoqlar (masalan: `feature/anpr-plate-recognition`, `feature/payme-integration`).
-- `bugfix/<muammo-nomi>` — Xatoliklarni to'g'rilash tarmog'i.
-- `hotfix/<muammo-nomi>` — Production'dagi shoshilinch muammolar uchun.
+```
+[ RTSP / ONVIF Kameralar ]       [ Ultratovush / Magnit Datchiklar ]
+            │                                      │
+            ▼                                      ▼
+[ Adversarial Weather CV ]        [ Dual-Layer Slot Manager ]
+ (CLAHE, Defogger, YOLOv8)              (A* Routing Engine)
+            │                                      │
+            └──────────────────┬───────────────────┘
+                               ▼
+               [ Parkly Core Engine (FastAPI) ]
+                               │
+            ┌──────────────────┴──────────────────┐
+            ▼                                     ▼
+ [ 10-Min SLA Watchdog ]             [ Cashless Billing & QR ]
+ (05m: Warn, 07m: Urg, 10m: Open)    (Payme, Click, Offline Debt)
+```
 
 ---
 
-## 🚀 Texnologik stek (Tavsiya etilgan)
-
-- **Backend:** Node.js (NestJS / TypeScript) yoki Go (Golang) / Python (FastAPI)
-- **Database:** PostgreSQL + Redis (keshlash va real-time holatlar uchun)
-- **Frontend / Admin:** Next.js (React) / Tailwind CSS
-- **Mobile:** Flutter (iOS & Android)
-- **IoT & Computer Vision:** Python (OpenCV, YOLO v8/v11), MQTT broker (EMQX)
-- **DevOps:** Docker, Docker Compose, GitHub Actions (CI/CD)
+## 💳 Rasmiy Tariflar Tizimi
+- 🆓 **Grace Period:** Dastlabki 15 daqiqa — **0 so'm**
+- 🚗 **Kunduzgi soatlik (08:00 - 20:00):** **5,000 so'm/soat**
+- 🌙 **Tungi soatlik (20:00 - 08:00):** **3,000 so'm/soat**
+- 🔥 **Tig'iz vaqt (Peak > 85% to'lalik):** **8,000 so'm/soat**
+- 👑 **Kunlik fiksirlangan:** **40,000 so'm/kun**
+- 🛡️ **No-Automation Qarz:** Internet uzilganda to'xtovsiz chiqish va ilovada to'lash
 
 ---
 
-## 📄 Litsenziya
+## 🛡️ Rollar va Ruxsatlar (RBAC)
+- **Super-Admin (2 kishi):** `admin` (Erjigit), `superadmin2` (Sherzod) — To'liq nazorat va tariflarni o'zgartirish.
+- **Adminlar (4 kishi):** `admin_yunusobod`, `admin_chilonzor`, `admin_mirobod`, `admin_sergeli` — Filial monitoringi va hisobotlar.
+- **Smena Nazoratchisi (2 kishi):** `operator1`, `operator2` — Jonli oqim va SLA ogohlantirishlari.
 
-Loyiha xususiy mulk hisoblanadi. © 2026 Parkly.uz. Barcha huquqlar himoyalangan.
+---
+
+## 🚀 O'rnatish va Ishga Tushirish
+
+```bash
+# 1. Repozitoriyani klonlash
+git clone https://github.com/Parkly-uz/Parkly.uz.git
+cd Parkly.uz
+
+# 2. Kutubxonalarni o'rnatish
+pip install -r requirements.txt
+
+# 3. Testlarni tekshirish
+python -m unittest tests/test_core_engine.py
+
+# 4. API Serverni ishga tushirish
+uvicorn main:app --reload --port 8000
+```
+
+---
+
+## 📄 Hujjatlar
+- 📑 [Master Project Specification](MASTER_PROJECT_SPECIFICATION.md)
+- 📋 [Top 100 Backlog Tasks](BACKLOG_100_TASKS.md)
