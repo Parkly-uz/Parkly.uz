@@ -75,7 +75,7 @@ Parkly.uz haydovchilar uchun bo'sh joylarni real vaqt rejimida (real-time) topis
 - **Frontend / Admin:** Next.js (React) / Tailwind CSS
 - **Mobile:** Flutter (iOS & Android)
 - **IoT & Computer Vision:** Python (OpenCV, YOLO v8/v11), MQTT broker (EMQX)
-- **DevOps:** Docker, Docker Compose, GitHub Actions (CI/CD)
+- **DevOps:** GitHub Actions (CI/CD), Native Python / PostgreSQL / Redis
 
 ---
 

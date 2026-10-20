@@ -1,32 +1,30 @@
 """
-Parkly.uz — Adaptive Low-Light & Glare Enhancement
-Kechasi faralar yog'dusi (glare) yoki qorong'i atrofda kontrastni avtomatik moslashtiruvchi modul.
+Parkly.uz — Advanced Adaptive Low-Light, Fog & Glare Enhancement
+Qorong'i, tuman, xira va kuchli yorug'lik sharoitida ANPR aniqligini keskin oshiruvchi vizual filtrlar.
 """
 
 import cv2
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Dict, Any
 
 
 class FrameEnhancer:
     """
-    Tasvir sifatini yaxshilash va kechki rejimni boshqarish moduli.
-    
+    Og'ir ob-havo va yorug'lik sharoitlari uchun kadrni optimallashtiruvchi intellektual filtr.
+
     Qo'llaniladigan usullar:
-    1. Yoritilganlik darajasi tahlili (Luminance Mean).
-    2. CLAHE (Contrast Limited Adaptive Histogram Equalization) — lokal kontrastni yaxshilash.
-    3. Adaptive Gamma Correction — yorug'lik darajasiga qarab dinamik yoritish/so'ndirish.
-    4. Glare Reduction — kuchli fara nurlari bo'yicha yaltiroqlikni bosish.
+    1. CLAHE (Contrast Limited Adaptive Histogram Equalization) - qorong'i va xira joylarni yoritish.
+    2. Bilateral Filtering - tuman va shovqinni (noise) kamaytirish, ammo raqam qirralarini keskin saqlash.
+    3. Adaptive Gamma Correction - faralar nuri (glare) yoki qorong'ulikni tarqatish.
     """
 
-    LOW_LIGHT_THRESHOLD = 80.0    # Agar o'rtacha yorug'lik 80 dan past bo'lsa -> Qorong'i rejim
-    HIGH_GLARE_THRESHOLD = 210.0  # Agar o'rtacha yorug'lik 210 dan baland bo'lsa -> Faralar yorishi
+    LOW_LIGHT_THRESHOLD = 75.0
+    HIGH_GLARE_THRESHOLD = 215.0
 
     @classmethod
     def calculate_brightness(cls, image: np.ndarray) -> float:
-        """Tasvirning o'rtacha yorug'ligini (0-255 shkalasida) hisoblash"""
+        """Tasvirning o'rtacha yorug'ligini hisoblash (LAB rang fazosining L kanali)"""
         if len(image.shape) == 3:
-            # LAB rang fazosiga o'tkazib L (Luminance) kanalini olamiz
             lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
             l_channel = lab[:, :, 0]
             return float(np.mean(l_channel))
@@ -34,18 +32,17 @@ class FrameEnhancer:
 
     @classmethod
     def apply_gamma_correction(cls, image: np.ndarray, gamma: float = 1.0) -> np.ndarray:
-        """Gamma korreksiyasi: gamma < 1.0 yoritadi (masalan 0.5), gamma > 1.0 qorong'ilashtiradi"""
+        """Gamma korreksiyasi (yoritish yoki qorong'ilashtirish)"""
         if abs(gamma - 1.0) < 0.05:
             return image
-        # gamma < 1.0 bo'lganda (x ** gamma) qiymatni oshiradi (yoritadi)
-        table = np.array([((i / 255.0) ** gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+        inv_gamma = 1.0 / gamma
+        table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
         return cv2.LUT(image, table)
 
     @classmethod
-    def apply_clahe(cls, image: np.ndarray, clip_limit: float = 2.5, grid_size: Tuple[int, int] = (8, 8)) -> np.ndarray:
+    def apply_clahe(cls, image: np.ndarray, clip_limit: float = 3.0, grid_size: Tuple[int, int] = (8, 8)) -> np.ndarray:
         """
-        CLAHE: Rangli tasvirning LAB rang modelidagi L (yorug'lik) kanaliga adaptiv gistogramma tenglashtirish.
-        Ranglarni buzmasdan faqat kontrastni va harflar aniqligini kuchaytiradi.
+        CLAHE: Lokal kontrastni kuchaytirish (raqam harflarini ajratib ko'rsatish uchun).
         """
         if len(image.shape) == 3:
             lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
@@ -59,30 +56,48 @@ class FrameEnhancer:
             return clahe.apply(image)
 
     @classmethod
-    def enhance_frame(cls, frame: np.ndarray) -> Tuple[np.ndarray, dict]:
+    def reduce_fog_and_noise(cls, image: np.ndarray) -> np.ndarray:
         """
-        Kadrdagi yorug'lik holatini tahlil qilib avtomatik moslashtiradi.
+        Bilateral Filter yordamida tuman va shovqinni tozalash, shu bilan birga qirralarning o'tkirligini saqlash.
         """
+        # Bilateral filter qirralarni yumshatmasdan shovqinni yo'qotadi
+        filtered = cv2.bilateralFilter(image, d=9, sigmaColor=75, sigmaSpace=75)
+        return filtered
+
+    @classmethod
+    def enhance_frame(cls, frame: np.ndarray) -> Tuple[np.ndarray, Dict[str, Any]]:
+        """
+        Kadrdagi ob-havo va yorug'lik sharoitini aniqlab, mos filtrlarni qo'llash.
+        """
+        if frame is None or frame.size == 0:
+            return frame, {"mode": "EMPTY", "brightness": 0.0}
+
         brightness = cls.calculate_brightness(frame)
         mode = "NORMAL"
+        processed = frame.copy()
 
+        # 1. Shovqinni va tumanni kamaytirish
+        processed = cls.reduce_fog_and_noise(processed)
+
+        # 2. Yorug'lik darajasiga qarab korreksiya
         if brightness < cls.LOW_LIGHT_THRESHOLD:
-            # 1. Qorong'i rejim: Gamma < 1.0 bilan yoritamiz va CLAHE qo'llaymiz
-            mode = "LOW_LIGHT"
-            gamma = 0.6 + (brightness / cls.LOW_LIGHT_THRESHOLD) * 0.3  # 0.6 dan 0.9 gacha
-            brightened = cls.apply_gamma_correction(frame, gamma=gamma)
-            enhanced = cls.apply_clahe(brightened, clip_limit=3.0)
+            mode = "LOW_LIGHT_FOG"
+            # Qorong'i yoki tumanli sharoit: kuchli gamma yoritish + CLAHE
+            gamma = 0.55 + (brightness / cls.LOW_LIGHT_THRESHOLD) * 0.35
+            processed = cls.apply_gamma_correction(processed, gamma=gamma)
+            processed = cls.apply_clahe(processed, clip_limit=3.5)
         elif brightness > cls.HIGH_GLARE_THRESHOLD:
-            # 2. Faralar yog'dusi / Kuchli porlash (Glare): Gammadan yuqori qiymat bilan so'ndiramiz
             mode = "HIGH_GLARE"
-            enhanced = cls.apply_gamma_correction(frame, gamma=1.3)
+            # Faralar nuri porlashi (Glare): Gamma orqali yumshatish
+            processed = cls.apply_gamma_correction(processed, gamma=1.4)
+            processed = cls.apply_clahe(processed, clip_limit=2.0)
         else:
-            # 3. Normal yorug'lik: Engil CLAHE bilan detallarni o'tkirlashtiramiz
-            enhanced = cls.apply_clahe(frame, clip_limit=1.5)
+            # Standart rejim: standart CLAHE
+            processed = cls.apply_clahe(processed, clip_limit=2.0)
 
         stats = {
             "mode": mode,
-            "raw_brightness": round(brightness, 2),
+            "brightness": round(brightness, 2),
             "is_enhanced": mode != "NORMAL"
         }
-        return enhanced, stats
+        return processed, stats
