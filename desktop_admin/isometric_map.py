@@ -376,7 +376,7 @@ class IsometricParkingMapWidget(QWidget):
             p.setPen(QPen(QColor(255, 255, 255), 1.5))
             p.drawPolygon(sp)
             p.setPen(QColor(255, 255, 255))
-            p.setFont(QFont("Segoe UI", int(7 * scale), QFont.Weight.Bold))
+            p.setFont(QFont("Segoe UI", max(6, int(7 * scale)), QFont.Weight.Bold))
             c = self.iso_project(65, 120, 1, ox, oy, scale)
             p.drawText(QRectF(c.x() - 20, c.y() - 10, 40, 20), Qt.AlignmentFlag.AlignCenter, "STOP")
 
@@ -482,7 +482,7 @@ class IsometricParkingMapWidget(QWidget):
             elif status == "FREE" and not self.is_mini:
                 fp = self.iso_project(gx + bw / 2, gy + bl / 2 + 10, 1, ox, oy, scale)
                 p.setPen(QColor(52, 211, 153, 200))
-                p.setFont(QFont("Segoe UI", int(7 * scale), QFont.Weight.Medium))
+                p.setFont(QFont("Segoe UI", max(6, int(7 * scale)), QFont.Weight.Medium))
                 p.drawText(QRectF(fp.x() - 25, fp.y() - 8, 50, 16), Qt.AlignmentFlag.AlignCenter, "BO'SH")
 
     # -------------------------------------------------------------------------
@@ -579,12 +579,12 @@ class IsometricParkingMapWidget(QWidget):
 
             # Raqam
             p.setPen(QColor(15, 23, 42))
-            p.setFont(QFont("Consolas", int(7.2 * scale), QFont.Weight.Bold))
+            p.setFont(QFont("Consolas", max(6, int(7.2 * scale)), QFont.Weight.Bold))
             p.drawText(QRectF(b_rect.left() + 6, b_rect.top() + 2, badge_w - 8, 12), Qt.AlignmentFlag.AlignCenter, plate)
 
             # Jonli Taymer (⏱ 01:24:15)
             p.setPen(QColor(2, 132, 199))  # Sky blue
-            p.setFont(QFont("Segoe UI", int(6.5 * scale), QFont.Weight.Bold))
+            p.setFont(QFont("Segoe UI", max(6, int(6.5 * scale)), QFont.Weight.Bold))
             p.drawText(QRectF(b_rect.left() + 6, b_rect.top() + 13, badge_w - 8, 12), Qt.AlignmentFlag.AlignCenter, f"⏱ {duration}")
 
     # -------------------------------------------------------------------------
@@ -680,7 +680,7 @@ class IsometricParkingMapWidget(QWidget):
         p.drawRoundedRect(z_rect, 10, 10)
 
         p.setPen(QColor(71, 85, 105))
-        p.setFont(QFont("Segoe UI", 9.5, QFont.Weight.Bold))
+        p.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
         p.drawText(z_rect, Qt.AlignmentFlag.AlignCenter, f"🔍 Zoom: {int(self.zoom_factor * 100)}% | Drag: Surish")
 
         # Pastki legenda

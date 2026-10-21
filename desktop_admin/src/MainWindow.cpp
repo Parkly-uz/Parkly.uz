@@ -5,6 +5,7 @@
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QInputDialog>
 #include <QDateTime>
 #include <QScrollArea>
 #include <QFrame>
@@ -15,7 +16,7 @@
 #include <QGraphicsDropShadowEffect>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), m_username("admin"), m_fullName("Erjigit (Bosh Rahbar)"), m_role("SUPER_ADMIN") {
+    : QMainWindow(parent), m_username("mirhamid_be"), m_fullName("Erjigitov Mirhamid"), m_role("SUPER_ADMIN") {
     setWindowTitle("Parkly.uz — Aqlli Avtoturargoh Boshqaruv Paneli");
     resize(1280, 800);
     setMinimumSize(1024, 680);
@@ -662,8 +663,8 @@ QWidget* MainWindow::createStaffPage() {
     sHead->addStretch();
     sLayout->addLayout(sHead);
 
-    m_staffTable = new QTableWidget(0, 5, staffCard);
-    m_staffTable->setHorizontalHeaderLabels({"ID", "Login", "F.I.SH", "Roli", "Smenasi / Vazifasi"});
+    m_staffTable = new QTableWidget(0, 6, staffCard);
+    m_staffTable->setHorizontalHeaderLabels({"ID", "Login", "F.I.SH", "Roli", "Smenasi / Vazifasi", "Tahrirlash"});
     m_staffTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_staffTable->setStyleSheet("border: none; font-size: 12px; alternate-background-color: #f8fafc;");
     m_staffTable->setAlternatingRowColors(true);
@@ -874,7 +875,41 @@ void MainWindow::onRefreshStaffTable() {
         m_staffTable->setItem(r, 2, new QTableWidgetItem(u.fullName));
         m_staffTable->setItem(r, 3, new QTableWidgetItem(u.role));
         m_staffTable->setItem(r, 4, new QTableWidgetItem(u.shift));
+
+        QPushButton *editBtn = new QPushButton("✏️ Tahrirlash");
+        editBtn->setStyleSheet("background-color: #f1f5f9; color: #0d9488; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 12px; font-weight: 600; cursor: pointer;");
+        connect(editBtn, &QPushButton::clicked, [this, r]() {
+            this->onEditStaffRow(r);
+        });
+        m_staffTable->setCellWidget(r, 5, editBtn);
     }
+}
+
+void MainWindow::onEditStaffRow(int row) {
+    QString currentLogin = m_staffTable->item(row, 1)->text();
+    QString currentName = m_staffTable->item(row, 2)->text();
+    QString currentRole = m_staffTable->item(row, 3)->text();
+
+    if (m_role != "SUPER_ADMIN" && currentLogin != m_username) {
+        QMessageBox::warning(this, "Ruxsat Yo'q", "Oddiy adminlar faqat o'z shaxsiy ma'lumotlarini tahrirlay oladi!");
+        return;
+    }
+
+    bool ok;
+    QString newName = QInputDialog::getText(this, "Xodimni Tahrirlash", "To'liq F.I.SH:", QLineEdit::Normal, currentName, &ok);
+    if (!ok) return;
+
+    QString newLogin = QInputDialog::getText(this, "Xodimni Tahrirlash", "Login:", QLineEdit::Normal, currentLogin, &ok);
+    if (!ok) return;
+
+    QString newPass = QInputDialog::getText(this, "Parolni O'zgartirish", "Yangi Parol (qoldirish uchun bo'sh qoldiring):", QLineEdit::Password, "", &ok);
+    if (!ok) return;
+
+    m_staffTable->item(row, 1)->setText(newLogin);
+    m_staffTable->item(row, 2)->setText(newName);
+
+    addNotification("Xodim Tahrirlandi", QString("Xodim ma'lumotlari yangilandi: %1 (%2)").arg(newName, newLogin), "SUCCESS");
+    QMessageBox::information(this, "Muvaffaqiyat", "Xodim ma'lumotlari muvaffaqiyatli saqlandi va yangilandi!");
 }
 
 void MainWindow::onAddNewStaff() {

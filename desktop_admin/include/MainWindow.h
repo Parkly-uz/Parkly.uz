@@ -38,6 +38,7 @@ private slots:
     void onManualOpenBarrier();
     void onRefreshStaffTable();
     void onAddNewStaff();
+    void onEditStaffRow(int row);
     void onSaveSettings();
     void onSimulateCameraDetection();
     void onBellClicked();
