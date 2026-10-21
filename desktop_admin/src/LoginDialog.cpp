@@ -18,7 +18,7 @@ void LoginDialog::setupUI() {
     mainLayout->setSpacing(0);
 
     // ==========================================
-    // 1. CHAP TOMON (BRANDING & ILLUSTRATION - Image 3 dagi kabi)
+    // 1. CHAP TOMON (BRANDING & ILLUSTRATION)
     // ==========================================
     QFrame *leftFrame = new QFrame(this);
     leftFrame->setFixedWidth(320);
@@ -58,12 +58,10 @@ void LoginDialog::setupUI() {
         "• Real-time ANPR kamera oqimi\n"
         "• 2D interaktiv slotlar xaritasi\n"
         "• Avtomatlashgan to'lov va shlagbaum\n"
-        "• Super-Admin va 5 ta operator nazorati", leftFrame);
+        "• Super-Admin va Operator nazorati", leftFrame);
     descLabel->setStyleSheet("font-size: 11px; color: #99f6e4; line-height: 1.5; margin-top: 15px;");
     descLabel->setWordWrap(true);
 
-    leftLayout->addWidget(logoLabel);
-    leftLayout->addWidget(iconLabel);
     leftLayout->addWidget(subTitle);
     leftLayout->addWidget(descLabel);
     leftLayout->addStretch();
@@ -73,7 +71,7 @@ void LoginDialog::setupUI() {
     leftLayout->addWidget(footerLeft);
 
     // ==========================================
-    // 2. O'NG TOMON (LOGIN FORMASI - Image 3 dagi kabi)
+    // 2. O'NG TOMON (LOGIN FORMASI)
     // ==========================================
     QFrame *rightFrame = new QFrame(this);
     rightFrame->setStyleSheet("background-color: #ffffff; border-top-right-radius: 12px; border-bottom-right-radius: 12px;");
@@ -93,7 +91,7 @@ void LoginDialog::setupUI() {
 
     m_usernameEdit = new QLineEdit(rightFrame);
     m_usernameEdit->setPlaceholderText("admin yoki operator1");
-    m_usernameEdit->setText("admin"); // Sinov uchun qulaylik
+    m_usernameEdit->setText("admin");
     m_usernameEdit->setStyleSheet(R"(
         QLineEdit {
             border: 1px solid #cbd5e1;
@@ -115,7 +113,7 @@ void LoginDialog::setupUI() {
     m_passwordEdit = new QLineEdit(rightFrame);
     m_passwordEdit->setEchoMode(QLineEdit::Password);
     m_passwordEdit->setPlaceholderText("••••••••");
-    m_passwordEdit->setText("admin123"); // Sinov uchun qulaylik
+    m_passwordEdit->setText("admin123");
     m_passwordEdit->setStyleSheet(R"(
         QLineEdit {
             border: 1px solid #cbd5e1;
@@ -188,7 +186,6 @@ void LoginDialog::onLoginClicked() {
         return;
     }
 
-    // Rollar bo'yicha autentifikatsiya tekshiruvi:
     if (u == "admin" && p == "admin123") {
         m_username = "erjigitvv5";
         m_fullName = "Erjigit (Bosh Rahbar)";
