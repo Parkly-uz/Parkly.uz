@@ -304,54 +304,36 @@ class LoginDialog(QDialog):
         self.btn_login.clicked.connect(self.attempt_login)
         r_layout.addWidget(self.btn_login)
 
-        # 3. Sinov hisoblari paneli (Rasmdagi qizil ramkali qism — bir klikda to'ldiriladi)
-        test_box = QFrame(right_frame)
-        test_box.setStyleSheet("""
+        # 3. Barcha Xodimlar Login va Parollari Ro'yxati (Aniq ko'rsatilgan panel)
+        creds_box = QFrame(right_frame)
+        creds_box.setStyleSheet("""
             QFrame {
                 background: #f8fafc;
-                border: 1px dashed #cbd5e1;
+                border: 1px solid #cbd5e1;
                 border-radius: 8px;
-                padding: 8px;
-                margin-top: 8px;
+                padding: 10px;
+                margin-top: 4px;
             }
         """)
-        tb_layout = QHBoxLayout(test_box)
-        tb_layout.setContentsMargins(6, 4, 6, 4)
+        cb_layout = QVBoxLayout(creds_box)
+        cb_layout.setContentsMargins(8, 6, 8, 6)
+        cb_layout.setSpacing(4)
 
-        tb_lbl = QLabel("Sinov:", test_box)
-        tb_lbl.setStyleSheet("font-size: 11px; font-weight: 700; color: #64748b;")
-        tb_layout.addWidget(tb_lbl)
+        cb_title = QLabel("🔑 Tizimdagi Barcha Login va Parollar:", creds_box)
+        cb_title.setStyleSheet("font-size: 11.5px; font-weight: 800; color: #0f172a;")
+        cb_layout.addWidget(cb_title)
 
-        btn_fill_admin = QPushButton("Super-Admin", test_box)
-        btn_fill_admin.setToolTip("Erjigit (Bosh Rahbar) - To'liq boshqaruv")
-        btn_fill_admin.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fill_admin.setStyleSheet("color: #0d9488; font-weight: 700; font-size: 11px; border: none; background: transparent;")
-        btn_fill_admin.clicked.connect(lambda: self.fill_credentials("admin", "admin123"))
-        tb_layout.addWidget(btn_fill_admin)
+        creds_text = QLabel(
+            "• Super-Admin (Erjigit): <b>admin</b> / <code>admin123</code>\n"
+            "• Super-Admin (Sherzod): <b>superadmin2</b> / <code>admin123</code>\n"
+            "• Admin (Yunusobod): <b>admin_yunusobod</b> / <code>admin123</code>\n"
+            "• Operator (Farrux): <b>operator1</b> / <code>operator123</code>",
+            creds_box
+        )
+        creds_text.setStyleSheet("font-size: 10.5px; color: #334155; line-height: 1.4;")
+        cb_layout.addWidget(creds_text)
 
-        tb_div1 = QLabel("|", test_box)
-        tb_div1.setStyleSheet("color: #cbd5e1;")
-        tb_layout.addWidget(tb_div1)
-
-        btn_fill_subadmin = QPushButton("Oddiy Admin", test_box)
-        btn_fill_subadmin.setToolTip("Jahongir Qodirov - Yunusobod filiali (Monitoring)")
-        btn_fill_subadmin.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fill_subadmin.setStyleSheet("color: #0284c7; font-weight: 700; font-size: 11px; border: none; background: transparent;")
-        btn_fill_subadmin.clicked.connect(lambda: self.fill_credentials("admin_yunusobod", "admin123"))
-        tb_layout.addWidget(btn_fill_subadmin)
-
-        tb_div2 = QLabel("|", test_box)
-        tb_div2.setStyleSheet("color: #cbd5e1;")
-        tb_layout.addWidget(tb_div2)
-
-        btn_fill_op = QPushButton("Operator", test_box)
-        btn_fill_op.setToolTip("Farrux Yusupov - Smena 1")
-        btn_fill_op.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fill_op.setStyleSheet("color: #64748b; font-weight: 700; font-size: 11px; border: none; background: transparent;")
-        btn_fill_op.clicked.connect(lambda: self.fill_credentials("operator1", "operator123"))
-        tb_layout.addWidget(btn_fill_op)
-
-        r_layout.addWidget(test_box)
+        r_layout.addWidget(creds_box)
         r_layout.addStretch()
 
         main_layout.addWidget(right_frame)
