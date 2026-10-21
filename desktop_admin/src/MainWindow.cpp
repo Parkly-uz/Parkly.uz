@@ -246,7 +246,7 @@ QWidget* MainWindow::createLeftSidebar() {
     };
 
     addNavBtn(0, "desktop_admin/assets/icons/dashboard.svg", "Dashboard");
-    addNavBtn(1, "desktop_admin/assets/icons/map.svg", "2D Xarita");
+    addNavBtn(1, "desktop_admin/assets/icons/map.svg", "3D İzometrik Xarita");
     addNavBtn(2, "desktop_admin/assets/icons/camera.svg", "Kameralar");
     addNavBtn(3, "desktop_admin/assets/icons/wallet.svg", "Moliya");
     addNavBtn(4, "desktop_admin/assets/icons/users.svg", "Xodimlar");
@@ -331,7 +331,7 @@ QWidget* MainWindow::createTopHeader() {
     };
 
     addPill(0, "1. Dashboard");
-    addPill(1, "2. Xarita");
+    addPill(1, "2. 3D İzometrik Xarita");
     addPill(2, "3. Kameralar");
     addPill(3, "4. Moliya");
     addPill(4, "5. Xodimlar");

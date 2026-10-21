@@ -34,16 +34,14 @@ void DatabaseManager::initMockData() {
         {12, 1, "VIP", "VIP-03", "VIP_STAFF", "RESERVED", 550, 240, 80, 140, ""}
     };
 
-    // Huquqlar Matritsasi: 2 ta Super-Admin, 4 ta Oddiy Admin va 2 ta Smena Operatorlari
+    // Huquqlar Matritsasi: Loyiha Asosiy Jamoasi (6 ta asosiy rol)
     m_mockStaff = {
-        {1, "admin", "Erjigit (Bosh Rahbar)", "SUPER_ADMIN", "Asosiy Boshqaruv", true},
-        {2, "superadmin2", "Sherzod Aliyev", "SUPER_ADMIN", "Tizim Arxitekturasi", true},
-        {3, "admin_yunusobod", "Jahongir Qodirov", "ADMIN", "Yunusobod Filiali", true},
-        {4, "admin_chilonzor", "Aziz Rustamov", "ADMIN", "Chilonzor Filiali", true},
-        {5, "admin_mirobod", "Bobur Mirzayev", "ADMIN", "Mirobod Filiali", true},
-        {6, "admin_sergeli", "Dilshod Karimov", "ADMIN", "Sergeli Filiali", true},
-        {7, "operator1", "Farrux Yusupov", "OPERATOR", "Smena 1 (08:00 - 20:00)", true},
-        {8, "operator2", "G'ayrat Xoliqov", "OPERATOR", "Smena 2 (20:00 - 08:00)", true}
+        {1, "dilshod_pm", "Samaxov Dilshod", "SUPER_ADMIN", "Product Manager (PM)", true},
+        {2, "mirhamid_be", "Erjigitov Mirhamid", "SUPER_ADMIN", "Backend / Algoritm", true},
+        {3, "jaloliddin_iot", "Mamasarulov Jaloliddin", "ADMIN", "IoT Muhandisi", true},
+        {4, "hikmatilla_fe", "Tohirjonov Hikmatilla", "ADMIN", "Frontend / Admin Panel", true},
+        {5, "abbosxon_qa", "Saidov Abbosxon", "ADMIN", "QA (Sifat Nazorati & DevOps)", true},
+        {6, "omirboyev_cv", "Omirboyev Said", "ADMIN", "Computer Vision (ANPR)", true}
     };
 }
 
