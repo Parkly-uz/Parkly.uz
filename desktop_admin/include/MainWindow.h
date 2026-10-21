@@ -29,6 +29,7 @@ public:
 
     void setAuthenticatedUser(const QString& username, const QString& fullName, const QString& role);
     void addNotification(const QString& title, const QString& message, const QString& type = "SUCCESS");
+    void refreshDashboardMetrics();
 
 private slots:
     void onNavButtonClicked(int index);
