@@ -8,8 +8,17 @@
 #include <QLineEdit>
 #include <QComboBox>
 #include <QButtonGroup>
+#include <QDateTime>
+#include <QVector>
 #include "ParkingMapWidget.h"
 #include "DatabaseManager.h"
+
+struct NotificationItem {
+    QString title;
+    QString message;
+    QString type; // "INFO", "SUCCESS", "WARNING", "ALERT"
+    QDateTime timestamp;
+};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -19,6 +28,7 @@ public:
     ~MainWindow();
 
     void setAuthenticatedUser(const QString& username, const QString& fullName, const QString& role);
+    void addNotification(const QString& title, const QString& message, const QString& type = "SUCCESS");
 
 private slots:
     void onNavButtonClicked(int index);
@@ -29,6 +39,7 @@ private slots:
     void onAddNewStaff();
     void onSaveSettings();
     void onSimulateCameraDetection();
+    void onBellClicked();
     void onLogout();
 
 private:
@@ -44,6 +55,9 @@ private:
     QLabel *m_userProfilePill;
     QLabel *m_greetingTitle;
     QLabel *m_greetingSubtitle;
+    QPushButton *m_bellButton;
+    QLabel *m_badgeLabel;
+    QVector<NotificationItem> m_notifications;
 
     // View 0: Dashboard (Bosh Sahifa)
     QLabel *m_totalRevenueLabel;
@@ -82,14 +96,10 @@ private:
     QLineEdit *m_dailyCapEdit;
     QComboBox *m_barrierAutoOpenCombo;
 
-    // Shlagbaum boshqaruvi
-    QLineEdit *m_overrideReasonEdit;
-    QTableWidget *m_auditTable;
-
     void setupUI();
     QWidget* createLeftSidebar();
     QWidget* createTopHeader();
-    
+
     // Sahifalar
     QWidget* createDashboardPage();
     QWidget* createMapPage();

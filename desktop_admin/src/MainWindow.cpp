@@ -8,9 +8,13 @@
 #include <QDateTime>
 #include <QScrollArea>
 #include <QFrame>
+#include <QIcon>
+#include <QPixmap>
+#include <QMenu>
+#include <QWidgetAction>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), m_username("admin"), m_fullName("Erjigit (Boshliq)"), m_role("SUPER_ADMIN") {
+    : QMainWindow(parent), m_username("admin"), m_fullName("Erjigit (Bosh Rahbar)"), m_role("SUPER_ADMIN") {
     setWindowTitle("Parkly.uz — Aqlli Avtoturargoh Boshqaruv Paneli");
     resize(1280, 800);
     setMinimumSize(1024, 680);
@@ -25,9 +29,90 @@ void MainWindow::setAuthenticatedUser(const QString& username, const QString& fu
     m_fullName = fullName;
     m_role = role;
 
-    m_userProfilePill->setText(QString("👤 <b>%1</b> (%2)").arg(m_fullName, m_role));
-    m_greetingTitle->setText(QString("Xayrli kun, %1 👋").arg(m_fullName));
+    m_userProfilePill->setText(QString("Foydalanuvchi: %1 (%2)").arg(m_fullName, m_role));
+    m_greetingTitle->setText(QString("Xayrli kun, %1").arg(m_fullName));
     applyRolePermissions();
+
+    // Real-time login bildirishnomasi
+    addNotification("Tizimga Kirish", QString("%1 (%2) tizimga muvaffaqiyatli kirdi.").arg(m_fullName, m_role), "SUCCESS");
+}
+
+void MainWindow::addNotification(const QString& title, const QString& message, const QString& type) {
+    NotificationItem item;
+    item.title = title;
+    item.message = message;
+    item.type = type;
+    item.timestamp = QDateTime::currentDateTime();
+
+    m_notifications.prepend(item); // Eng yangisi tepada
+
+    // Badge sonini yangilash
+    if (m_badgeLabel) {
+        m_badgeLabel->setText(QString::number(m_notifications.size()));
+        m_badgeLabel->setVisible(true);
+    }
+}
+
+void MainWindow::onBellClicked() {
+    QMenu menu(this);
+    menu.setStyleSheet(R스의
+        QMenu {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 8px;
+            font-family: 'Segoe UI';
+            min-width: 320px;
+        }
+        QMenu::item {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+    )");
+
+    QWidget *headerWidget = new QWidget(&menu);
+    QHBoxLayout *hLayout = new QHBoxLayout(headerWidget);
+    QLabel *titleLbl = new QLabel("<b>Bildirishnomalar (Notifications)</b>", headerWidget);
+    titleLbl->setStyleSheet("color: #0f172a; font-size: 13px;");
+    hLayout->addWidget(titleLbl);
+    hLayout->setContentsMargins(10, 5, 10, 5);
+
+    QWidgetAction *headerAction = new QWidgetAction(&menu);
+    headerAction->setDefaultWidget(headerWidget);
+    menu.addAction(headerAction);
+
+    if (m_notifications.isEmpty()) {
+        QAction *emptyAct = new QAction("Hozircha bildirishnomalar yo'q", &menu);
+        emptyAct->setEnabled(false);
+        menu.addAction(emptyAct);
+    } else {
+        int count = 0;
+        for (const auto& notif : m_notifications) {
+            if (count++ > 10) break; // Faqat oxirgi 10 tasi
+            QString timeStr = notif.timestamp.toString("hh:mm:ss");
+            QWidget *itemWidget = new QWidget(&menu);
+            QVBoxLayout *vL = new QVBoxLayout(itemWidget);
+            vL->setContentsMargins(8, 4, 8, 4);
+            vL->setSpacing(2);
+
+            QLabel *tL = new QLabel(QString("<b>[%1]</b> %2").arg(notif.type, notif.title), itemWidget);
+            tL->setStyleSheet(notif.type == "SUCCESS" ? "color: #0d9488; font-size: 12px;" : "color: #0f172a; font-size: 12px;");
+            QLabel *mL = new QLabel(notif.message, itemWidget);
+            mL->setStyleSheet("color: #64748b; font-size: 11px;");
+            QLabel *tsL = new QLabel(timeStr, itemWidget);
+            tsL->setStyleSheet("color: #94a3b8; font-size: 9px;");
+
+            vL->addWidget(tL);
+            vL->addWidget(mL);
+            vL->addWidget(tsL);
+
+            QWidgetAction *act = new QWidgetAction(&menu);
+            act->setDefaultWidget(itemWidget);
+            menu.addAction(act);
+        }
+    }
+
+    menu.exec(m_bellButton->mapToGlobal(QPoint(0, m_bellButton->height() + 5)));
 }
 
 void MainWindow::setupUI() {
@@ -38,27 +123,25 @@ void MainWindow::setupUI() {
     rootLayout->setContentsMargins(12, 12, 12, 12);
     rootLayout->setSpacing(12);
 
-    // 1. Chap Vertikal Floating Navigatsiya Dock (Image 1 & 2 kabi)
+    // 1. Chap Vertikal Navigatsiya Dock
     QWidget *sidebar = createLeftSidebar();
     rootLayout->addWidget(sidebar);
 
-    // 2. Asosiy Kontent Qismi (O'ng tomon)
+    // 2. Asosiy Kontent Qismi
     QVBoxLayout *contentLayout = new QVBoxLayout();
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(12);
 
-    // Yuqori Header paneli (Logo, Pill Tabs, Search, Profil)
     QWidget *header = createTopHeader();
     contentLayout->addWidget(header);
 
-    // Sahifalar Stacki (QStackedWidget)
     m_contentStack = new QStackedWidget(this);
-    m_contentStack->addWidget(createDashboardPage()); // Index 0: Bosh Sahifa
-    m_contentStack->addWidget(createMapPage());       // Index 1: 2D Xarita
-    m_contentStack->addWidget(createCameraPage());    // Index 2: Kameralar & ANPR
-    m_contentStack->addWidget(createFinancePage());   // Index 3: 4. Moliya & Tranzaksiyalar
-    m_contentStack->addWidget(createStaffPage());     // Index 4: 5. Xodimlar (RBAC)
-    m_contentStack->addWidget(createSettingsPage());  // Index 5: 6. Tizim Sozlamalari
+    m_contentStack->addWidget(createDashboardPage()); // 0: Dashboard
+    m_contentStack->addWidget(createMapPage());       // 1: 2D Xarita
+    m_contentStack->addWidget(createCameraPage());    // 2: Kameralar
+    m_contentStack->addWidget(createFinancePage());   // 3: Moliya
+    m_contentStack->addWidget(createStaffPage());     // 4: Xodimlar
+    m_contentStack->addWidget(createSettingsPage());  // 5: Sozlamalar
 
     contentLayout->addWidget(m_contentStack, 1);
     rootLayout->addLayout(contentLayout, 1);
@@ -79,17 +162,13 @@ QWidget* MainWindow::createLeftSidebar() {
             background-color: transparent;
             border: none;
             border-radius: 14px;
-            font-size: 20px;
             padding: 10px;
-            color: #64748b;
         }
         QPushButton:hover {
             background-color: #f1f5f9;
-            color: #0f766e;
         }
         QPushButton:checked {
             background-color: #0d9488;
-            color: #ffffff;
         }
     )");
 
@@ -97,37 +176,55 @@ QWidget* MainWindow::createLeftSidebar() {
     layout->setContentsMargins(8, 18, 8, 18);
     layout->setSpacing(14);
 
-    QLabel *logoIcon = new QLabel("🚗", sidebar);
+    QLabel *logoIcon = new QLabel(sidebar);
+    QPixmap carPix("desktop_admin/assets/icons/car.svg");
+    if (carPix.isNull()) carPix.load("assets/icons/car.svg");
+    if (!carPix.isNull()) {
+        logoIcon->setPixmap(carPix.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        logoIcon->setText("P");
+    }
     logoIcon->setAlignment(Qt::AlignCenter);
-    logoIcon->setStyleSheet("font-size: 26px; margin-bottom: 12px;");
+    logoIcon->setStyleSheet("margin-bottom: 12px; font-size: 22px; font-weight: bold; color: #0d9488;");
     layout->addWidget(logoIcon);
 
     m_navGroup = new QButtonGroup(this);
     m_navGroup->setExclusive(true);
 
-    auto addNavBtn = [this, layout](int id, const QString& icon, const QString& tooltip) {
-        QPushButton *btn = new QPushButton(icon, this);
+    auto addNavBtn = [this, layout](int id, const QString& iconPath, const QString& tooltip) {
+        QPushButton *btn = new QPushButton(this);
         btn->setCheckable(true);
         btn->setToolTip(tooltip);
         btn->setFixedSize(54, 46);
+        QPixmap p(iconPath);
+        if (p.isNull()) p.load(iconPath.replace("desktop_admin/", ""));
+        if (!p.isNull()) {
+            btn->setIcon(QIcon(p));
+            btn->setIconSize(QSize(22, 22));
+        }
         m_navGroup->addButton(btn, id);
         layout->addWidget(btn);
         if (id == 0) btn->setChecked(true);
     };
 
-    addNavBtn(0, "📊", "Bosh Sahifa (Dashboard)");
-    addNavBtn(1, "🗺️", "2D Xarita");
-    addNavBtn(2, "📹", "Kameralar va ANPR");
-    addNavBtn(3, "👥", "Xodimlar va Rollar");
-    addNavBtn(4, "💳", "Moliya va To'lovlar");
-    addNavBtn(5, "⚙️", "Tizim Sozlamalari");
+    addNavBtn(0, "desktop_admin/assets/icons/dashboard.svg", "Bosh Sahifa (Dashboard)");
+    addNavBtn(1, "desktop_admin/assets/icons/map.svg", "2D Xarita");
+    addNavBtn(2, "desktop_admin/assets/icons/camera.svg", "Kameralar va ANPR");
+    addNavBtn(3, "desktop_admin/assets/icons/wallet.svg", "Moliya va To'lovlar");
+    addNavBtn(4, "desktop_admin/assets/icons/users.svg", "Xodimlar va Rollar");
+    addNavBtn(5, "desktop_admin/assets/icons/settings.svg", "Tizim Sozlamalari");
 
     layout->addStretch();
 
-    QPushButton *logoutBtn = new QPushButton("🚪", sidebar);
+    QPushButton *logoutBtn = new QPushButton(sidebar);
     logoutBtn->setToolTip("Chiqish (Logout)");
     logoutBtn->setFixedSize(54, 46);
-    logoutBtn->setStyleSheet("color: #ef4444;");
+    QPixmap logoutP("desktop_admin/assets/icons/logout.svg");
+    if (logoutP.isNull()) logoutP.load("assets/icons/logout.svg");
+    if (!logoutP.isNull()) {
+        logoutBtn->setIcon(QIcon(logoutP));
+        logoutBtn->setIconSize(QSize(22, 22));
+    }
     connect(logoutBtn, &QPushButton::clicked, this, &MainWindow::onLogout);
     layout->addWidget(logoutBtn);
 
@@ -152,9 +249,7 @@ QWidget* MainWindow::createTopHeader() {
     layout->setSpacing(14);
 
     QPixmap logoPix("desktop_admin/assets/logo.png");
-    if (logoPix.isNull()) {
-        logoPix.load("assets/logo.png");
-    }
+    if (logoPix.isNull()) logoPix.load("assets/logo.png");
 
     if (!logoPix.isNull()) {
         QLabel *logoImg = new QLabel(header);
@@ -166,7 +261,6 @@ QWidget* MainWindow::createTopHeader() {
         layout->addWidget(brand);
     }
 
-    // O'rtadagi Pill navigatsiya tugmalari (Image 1 & 2 kabi)
     QHBoxLayout *pillsLayout = new QHBoxLayout();
     pillsLayout->setSpacing(6);
     m_topPillGroup = new QButtonGroup(this);
@@ -198,39 +292,58 @@ QWidget* MainWindow::createTopHeader() {
         if (id == 0) btn->setChecked(true);
     };
 
-    addPill(0, "1. Asosiy Ko'rsatkichlar");
-    addPill(1, "2. 2D Xarita");
+    addPill(0, "1. Dashboard");
+    addPill(1, "2. Xarita");
     addPill(2, "3. Kameralar");
-    addPill(3, "4. Moliya va Tranzaksiyalar");
-    addPill(4, "5. Xodimlar (RBAC)");
+    addPill(3, "4. Moliya");
+    addPill(4, "5. Xodimlar");
     addPill(5, "6. Sozlamalar");
 
     connect(m_topPillGroup, &QButtonGroup::idClicked, this, &MainWindow::onNavButtonClicked);
     layout->addLayout(pillsLayout);
     layout->addStretch();
 
-    // Qidiruv maydoni (Search)
-    QLineEdit *searchEdit = new QLineEdit(header);
-    searchEdit->setPlaceholderText("🔍 Mashina raqami yoki slot qidirish...");
-    searchEdit->setFixedWidth(240);
-    searchEdit->setStyleSheet(R"(
-        QLineEdit {
+    // Bildirishnoma Qo'ng'iroq Tugmasi (Bell Button)
+    m_bellButton = new QPushButton(header);
+    m_bellButton->setFixedSize(40, 40);
+    m_bellButton->setCursor(Qt::PointingHandCursor);
+    m_bellButton->setStyleSheet(R"(
+        QPushButton {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 6px 14px;
-            font-size: 12px;
-            color: #1e293b;
+            border-radius: 20px;
         }
-        QLineEdit:focus {
-            border: 1px solid #0d9488;
-            background-color: #ffffff;
+        QPushButton:hover {
+            background-color: #f1f5f9;
         }
     )");
-    layout->addWidget(searchEdit);
+    QPixmap bellP("desktop_admin/assets/icons/bell.svg");
+    if (bellP.isNull()) bellP.load("assets/icons/bell.svg");
+    if (!bellP.isNull()) {
+        m_bellButton->setIcon(QIcon(bellP));
+        m_bellButton->setIconSize(QSize(20, 20));
+    }
+    connect(m_bellButton, &QPushButton::clicked, this, &MainWindow::onBellClicked);
+
+    // Badge Label
+    m_badgeLabel = new QLabel("0", m_bellButton);
+    m_badgeLabel->setGeometry(22, 4, 16, 16);
+    m_badgeLabel->setAlignment(Qt::AlignCenter);
+    m_badgeLabel->setStyleSheet(R"(
+        QLabel {
+            background-color: #ef4444;
+            color: white;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+    )");
+    m_badgeLabel->setVisible(false);
+
+    layout->addWidget(m_bellButton);
 
     // Foydalanuvchi profili
-    m_userProfilePill = new QLabel(QString("👤 <b>%1</b> (%2)").arg(m_fullName, m_role), header);
+    m_userProfilePill = new QLabel(QString("Foydalanuvchi: %1 (%2)").arg(m_fullName, m_role), header);
     m_userProfilePill->setStyleSheet(R"(
         QLabel {
             background-color: #f0fdfa;
@@ -239,6 +352,7 @@ QWidget* MainWindow::createTopHeader() {
             padding: 6px 14px;
             border-radius: 16px;
             font-size: 12px;
+            font-weight: 600;
         }
     )");
     layout->addWidget(m_userProfilePill);
@@ -252,13 +366,12 @@ QWidget* MainWindow::createDashboardPage() {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(14);
 
-    // Xush kelibsiz banneri (Image 1 & 2 kabi)
     QFrame *welcomeCard = new QFrame(page);
     welcomeCard->setStyleSheet("background-color: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 14px;");
     QHBoxLayout *wLayout = new QHBoxLayout(welcomeCard);
-    
+
     QVBoxLayout *textLayout = new QVBoxLayout();
-    m_greetingTitle = new QLabel(QString("Xayrli kun, %1 👋").arg(m_fullName), welcomeCard);
+    m_greetingTitle = new QLabel(QString("Xayrli kun, %1").arg(m_fullName), welcomeCard);
     m_greetingTitle->setStyleSheet("font-size: 20px; font-weight: bold; color: #0f172a;");
     m_greetingSubtitle = new QLabel("Parkly.uz — avtoturargoh holati, tushumlar va xodimlar nazorati.", welcomeCard);
     m_greetingSubtitle->setStyleSheet("font-size: 13px; color: #64748b; margin-top: 2px;");
@@ -273,11 +386,9 @@ QWidget* MainWindow::createDashboardPage() {
 
     layout->addWidget(welcomeCard);
 
-    // Karta Ko'rsatkichlari (Metric Cards Grid - Image 1/2 kabi)
     QGridLayout *metricsGrid = new QGridLayout();
     metricsGrid->setSpacing(14);
 
-    // 1. Katta Yashil Kartochka (Jami tushum)
     QFrame *cardRevenue = new QFrame(page);
     cardRevenue->setStyleSheet(R"(
         QFrame {
@@ -292,7 +403,7 @@ QWidget* MainWindow::createDashboardPage() {
     revTitle->setStyleSheet("font-size: 13px; color: #99f6e4; font-weight: 600;");
     m_totalRevenueLabel = new QLabel("4,850,000 UZS", cardRevenue);
     m_totalRevenueLabel->setStyleSheet("font-size: 26px; font-weight: bold; color: #ffffff; margin-top: 4px;");
-    QLabel *revGrowth = new QLabel("↑ +14.2% o'tgan haftaga nisbatan (Bandlik: 68%)", cardRevenue);
+    QLabel *revGrowth = new QLabel("O'sish: +14.2% o'tgan haftaga nisbatan (Bandlik: 68%)", cardRevenue);
     revGrowth->setStyleSheet("font-size: 11px; color: #ccfbf1;");
     revLayout->addWidget(revTitle);
     revLayout->addWidget(m_totalRevenueLabel);
@@ -325,7 +436,6 @@ QWidget* MainWindow::createDashboardPage() {
 
     layout->addLayout(metricsGrid);
 
-    // So'nggi Harakatlar Jadvali (Recent Activities - Image 1/2 kabi)
     QFrame *tableCard = new QFrame(page);
     tableCard->setStyleSheet("background-color: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 16px;");
     QVBoxLayout *tableLayout = new QVBoxLayout(tableCard);
@@ -357,7 +467,6 @@ QWidget* MainWindow::createDashboardPage() {
         }
     )");
 
-    // Namunaviy dastlabki qatorlar
     auto addRow = [this](const QString& id, const QString& plate, const QString& slot, const QString& time, const QString& sum, const QString& status) {
         int r = m_recentActivitiesTable->rowCount();
         m_recentActivitiesTable->insertRow(r);
@@ -369,10 +478,10 @@ QWidget* MainWindow::createDashboardPage() {
         m_recentActivitiesTable->setItem(r, 5, new QTableWidgetItem(status));
     };
 
-    addRow("SES-1049", "01 A 777 AA", "A-102", "14:22:10", "15,000 UZS", "✅ To'langan (Payme)");
-    addRow("SES-1048", "10 123 BBA", "A-105", "14:18:05", "10,000 UZS", "⏳ To'lov kutilmoqda");
-    addRow("SES-1047", "01 888 ZZZ", "EV-02", "14:05:40", "35,000 UZS", "⚡ Zaryadlanmoqda");
-    addRow("SES-1046", "01 001 PPP", "VIP-02", "13:40:12", "0 UZS", "⭐ VIP Xodim");
+    addRow("SES-1049", "01 A 777 AA", "A-102", "14:22:10", "15,000 UZS", "To'langan (Payme)");
+    addRow("SES-1048", "10 123 BBA", "A-105", "14:18:05", "10,000 UZS", "To'lov kutilmoqda");
+    addRow("SES-1047", "01 888 ZZZ", "EV-02", "14:05:40", "35,000 UZS", "Zaryadlanmoqda");
+    addRow("SES-1046", "01 001 PPP", "VIP-02", "13:40:12", "0 UZS", "VIP Xodim");
 
     tableLayout->addWidget(m_recentActivitiesTable);
     layout->addWidget(tableCard, 1);
@@ -420,12 +529,11 @@ QWidget* MainWindow::createCameraPage() {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(14);
 
-    // Chap: Jonli video ekrani
     QFrame *videoCard = new QFrame(page);
     videoCard->setStyleSheet("background-color: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 16px;");
     QVBoxLayout *vLayout = new QVBoxLayout(videoCard);
 
-    QLabel *vTitle = new QLabel("<b>📷 Jonli Kirish Kameralari & ANPR (10 FPS)</b>", videoCard);
+    QLabel *vTitle = new QLabel("<b>Jonli Kirish Kameralari & ANPR (10 FPS)</b>", videoCard);
     vTitle->setStyleSheet("font-size: 14px; color: #0f172a;");
     vLayout->addWidget(vTitle);
 
@@ -434,7 +542,7 @@ QWidget* MainWindow::createCameraPage() {
     m_cameraFeedLabel->setStyleSheet("background-color: #0f172a; color: #2dd4bf; font-size: 15px; border-radius: 12px; min-height: 380px; font-weight: bold;");
     vLayout->addWidget(m_cameraFeedLabel, 1);
 
-    QPushButton *simBtn = new QPushButton("🚗 Yangi Mashina Kirishini Simulyatsiya Qilish", videoCard);
+    QPushButton *simBtn = new QPushButton("Yangi Mashina Kirishini Simulyatsiya Qilish", videoCard);
     simBtn->setStyleSheet(R"(
         QPushButton {
             background-color: #0d9488;
@@ -452,7 +560,6 @@ QWidget* MainWindow::createCameraPage() {
 
     layout->addWidget(videoCard, 1);
 
-    // O'ng: ANPR Jurnali
     QFrame *logCard = new QFrame(page);
     logCard->setStyleSheet("background-color: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 16px;");
     QVBoxLayout *lLayout = new QVBoxLayout(logCard);
@@ -482,7 +589,7 @@ QWidget* MainWindow::createStaffPage() {
     QVBoxLayout *sLayout = new QVBoxLayout(staffCard);
 
     QHBoxLayout *sHead = new QHBoxLayout();
-    QLabel *sTitle = new QLabel("<b>Xodimlar va Ruxsatlar Boshqaruvi (Super-Admin, Adminlar, 5 Operator)</b>", staffCard);
+    QLabel *sTitle = new QLabel("<b>Xodimlar va Ruxsatlar Boshqaruvi (Super-Admin va Operatorlar)</b>", staffCard);
     sTitle->setStyleSheet("font-size: 15px; color: #0f172a;");
     sHead->addWidget(sTitle);
     sHead->addStretch();
@@ -494,13 +601,12 @@ QWidget* MainWindow::createStaffPage() {
     m_staffTable->setStyleSheet("border: none; font-size: 12px;");
     sLayout->addWidget(m_staffTable, 1);
 
-    // Yangi xodim qo'shish paneli (Faqat Super-Admin uchun)
     QGroupBox *addBox = new QGroupBox("Yangi Xodim Qo'shish");
     addBox->setStyleSheet("font-size: 12px; font-weight: bold; color: #334155;");
     QHBoxLayout *addLayout = new QHBoxLayout(addBox);
 
     m_newStaffUserEdit = new QLineEdit();
-    m_newStaffUserEdit->setPlaceholderText("Login (masalan: op_smena_4)");
+    m_newStaffUserEdit->setPlaceholderText("Login (masalan: operator_3)");
     m_newStaffNameEdit = new QLineEdit();
     m_newStaffNameEdit->setPlaceholderText("To'liq Ism (F.I.SH)");
 
@@ -508,9 +614,9 @@ QWidget* MainWindow::createStaffPage() {
     m_newStaffRoleCombo->addItems({"OPERATOR", "ADMIN"});
 
     m_newStaffShiftCombo = new QComboBox();
-    m_newStaffShiftCombo->addItems({"Smena 1 (08:00 - 16:00)", "Smena 2 (16:00 - 00:00)", "Smena 3 (00:00 - 08:00)", "Zaxira"});
+    m_newStaffShiftCombo->addItems({"Smena 1 (08:00 - 16:00)", "Smena 2 (16:00 - 00:00)", "Smena 3 (00:00 - 08:00)"});
 
-    QPushButton *addBtn = new QPushButton("➕ Xodimni Saqlash");
+    QPushButton *addBtn = new QPushButton("Xodimni Saqlash");
     addBtn->setStyleSheet("background-color: #0d9488; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold;");
     connect(addBtn, &QPushButton::clicked, this, &MainWindow::onAddNewStaff);
 
@@ -537,7 +643,7 @@ QWidget* MainWindow::createFinancePage() {
     finCard->setStyleSheet("background-color: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 16px;");
     QVBoxLayout *fLayout = new QVBoxLayout(finCard);
 
-    QLabel *fTitle = new QLabel("<b>💳 Moliya, Kassa va To'lovlar Tahlili</b>", finCard);
+    QLabel *fTitle = new QLabel("<b>Moliya, Kassa va To'lovlar Tahlili</b>", finCard);
     fTitle->setStyleSheet("font-size: 16px; color: #0f172a;");
     fLayout->addWidget(fTitle);
 
@@ -595,7 +701,7 @@ QWidget* MainWindow::createSettingsPage() {
     card->setStyleSheet("background-color: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 20px;");
     QVBoxLayout *cLayout = new QVBoxLayout(card);
 
-    QLabel *sTitle = new QLabel("<b>⚙️ Parkovka Tizimi va Tarif Sozlamalari</b>", card);
+    QLabel *sTitle = new QLabel("<b>Parkovka Tizimi va Tarif Sozlamalari</b>", card);
     sTitle->setStyleSheet("font-size: 16px; color: #0f172a; margin-bottom: 10px;");
     cLayout->addWidget(sTitle);
 
@@ -628,7 +734,7 @@ QWidget* MainWindow::createSettingsPage() {
 
     cLayout->addLayout(formGrid);
 
-    QPushButton *saveBtn = new QPushButton("💾 Sozlamalarni Saqlash", card);
+    QPushButton *saveBtn = new QPushButton("Sozlamalarni Saqlash", card);
     saveBtn->setStyleSheet(R"(
         QPushButton {
             background-color: #0d9488;
@@ -657,19 +763,12 @@ void MainWindow::onNavButtonClicked(int index) {
 }
 
 void MainWindow::applyRolePermissions() {
-    // Hammasini yoqib olamiz
     for (int i = 0; i <= 5; ++i) {
         if (m_topPillGroup->button(i)) m_topPillGroup->button(i)->setEnabled(true);
         if (m_navGroup->button(i)) m_navGroup->button(i)->setEnabled(true);
     }
 
-    if (m_role == "ADMIN") {
-        // Oddiy Adminga: 4. Xodimlar (Index 4) va 5. Sozlamalar (Index 5) yopiq
-        if (m_topPillGroup->button(4)) m_topPillGroup->button(4)->setEnabled(false);
-        if (m_topPillGroup->button(5)) m_topPillGroup->button(5)->setEnabled(false);
-        if (m_navGroup->button(4)) m_navGroup->button(4)->setEnabled(false);
-        if (m_navGroup->button(5)) m_navGroup->button(5)->setEnabled(false);
-    } else if (m_role == "OPERATOR") {
+    if (m_role == "OPERATOR") {
         // Operatorga: Moliya (Index 3), Xodimlar (Index 4) va Sozlamalar (Index 5) yopiq
         for (int i = 3; i <= 5; ++i) {
             if (m_topPillGroup->button(i)) m_topPillGroup->button(i)->setEnabled(false);
@@ -690,9 +789,7 @@ void MainWindow::onSlotSelected(const ParkingSlotItem& slot) {
     );
 }
 
-void MainWindow::onManualOpenBarrier() {
-    // Shlagbaum ochish
-}
+void MainWindow::onManualOpenBarrier() {}
 
 void MainWindow::onRefreshStaffTable() {
     auto staff = DatabaseManager::instance().getAllStaff();
@@ -726,11 +823,13 @@ void MainWindow::onAddNewStaff() {
 
     m_newStaffUserEdit->clear();
     m_newStaffNameEdit->clear();
-    QMessageBox::information(this, "Muvaffaqiyat", "✅ Yangi xodim muvaffaqiyatli saqlandi!");
+    addNotification("Yangi Xodim", QString("Yangi xodim qo'shildi: %1").arg(n), "INFO");
+    QMessageBox::information(this, "Muvaffaqiyat", "Yangi xodim muvaffaqiyatli saqlandi!");
 }
 
 void MainWindow::onSaveSettings() {
-    QMessageBox::information(this, "Sozlamalar", "✅ Barcha tarif va tizim sozlamalari bazaga saqlandi!");
+    addNotification("Tizim", "Tarif va tizim sozlamalari yangilandi.", "SUCCESS");
+    QMessageBox::information(this, "Sozlamalar", "Barcha tarif va tizim sozlamalari bazaga saqlandi!");
 }
 
 void MainWindow::onSimulateCameraDetection() {
@@ -741,10 +840,11 @@ void MainWindow::onSimulateCameraDetection() {
     m_anprDetectionsTable->setItem(0, 0, new QTableWidgetItem(QDateTime::currentDateTime().toString("hh:mm:ss")));
     m_anprDetectionsTable->setItem(0, 1, new QTableWidgetItem(plate));
     m_anprDetectionsTable->setItem(0, 2, new QTableWidgetItem("98.2%"));
-    m_anprDetectionsTable->setItem(0, 3, new QTableWidgetItem("KIRISH GA RUXSAT"));
+    m_anprDetectionsTable->setItem(0, 3, new QTableWidgetItem("KIRISHGA RUXSAT"));
 
     DatabaseManager::instance().updateSlotStatus("A-101", "OCCUPIED", plate);
     m_mapWidget->reloadSlots();
+    addNotification("ANPR Kamerasi", QString("Yangi mashina aniqlandi va kiritildi: %1").arg(plate), "SUCCESS");
 }
 
 void MainWindow::onLogout() {
