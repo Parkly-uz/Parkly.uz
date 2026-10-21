@@ -324,10 +324,12 @@ class LoginDialog(QDialog):
         cb_layout.addWidget(cb_title)
 
         creds_text = QLabel(
-            "• Super-Admin (Erjigit): <b>admin</b> / <code>admin123</code>\n"
-            "• Super-Admin (Sherzod): <b>superadmin2</b> / <code>admin123</code>\n"
-            "• Admin (Yunusobod): <b>admin_yunusobod</b> / <code>admin123</code>\n"
-            "• Operator (Farrux): <b>operator1</b> / <code>operator123</code>",
+            "• Super-Admin (Samaxov Dilshod): <b>dilshod_pm</b> / <code>admin123</code>\n"
+            "• Super-Admin (Erjigitov Mirhamid): <b>mirhamid_be</b> / <code>admin123</code>\n"
+            "• Admin (Toxirjonov Hikmatilla): <b>hikmatilla_fe</b> / <code>admin123</code>\n"
+            "• Admin (Mamarasulov Jaloliddin): <b>jaloliddin_iot</b> / <code>admin123</code>\n"
+            "• Admin (Omirboyev Said): <b>omirboyev_cv</b> / <code>admin123</code>\n"
+            "• Admin (Saidov Abbosxon): <b>abbosxon_qa</b> / <code>admin123</code>",
             creds_box
         )
         creds_text.setStyleSheet("font-size: 10.5px; color: #334155; line-height: 1.4;")

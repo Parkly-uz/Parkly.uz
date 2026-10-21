@@ -169,7 +169,7 @@ class ParklyDatabase:
             conn.commit()
 
     def _seed_default_data(self, cursor):
-        # 1. Xodimlar mavjudligini tekshirish (Super-Admin: 2 kishi, Oddiy Admin: 4 kishi, Operator: 2 kishi)
+        # 1. Xodimlar mavjudligini tekshirish (Super-Admin: 2 kishi, Admin: 4 kishi)
         cursor.execute("SELECT COUNT(*) FROM staff_users WHERE role = 'SUPER_ADMIN'")
         super_cnt = cursor.fetchone()[0]
         cursor.execute("SELECT COUNT(*) FROM staff_users WHERE role = 'ADMIN'")
@@ -178,17 +178,14 @@ class ParklyDatabase:
         if super_cnt != 2 or admin_cnt != 4:
             cursor.execute("DELETE FROM staff_users")
             default_staff = [
-                # 2 Ta Super-Admin (Tizimning to'liq arxitekturasi, uskunalar va xodimlar boshqaruvi)
-                ("admin", "admin123", "Erjigit (Bosh Rahbar)", "SUPER_ADMIN", "Boshqaruv / Barcha hudud"),
-                ("superadmin2", "admin123", "Sherzod Aliyev (Tizim Arxitektori)", "SUPER_ADMIN", "Texnik va Tizim Boshqaruvi"),
-                # 4 Ta Oddiy Admin (Operatsion jarayon, tushumlarni monitoring qilish, tranzaksiyalar va navbatchilik)
-                ("admin_yunusobod", "admin123", "Jahongir Qodirov", "ADMIN", "Yunusobod Filiali"),
-                ("admin_chilonzor", "admin123", "Aziz Rustamov", "ADMIN", "Chilonzor Filiali"),
-                ("admin_mirobod", "admin123", "Bobur Mirzayev", "ADMIN", "Mirobod Filiali"),
-                ("admin_sergeli", "admin123", "Dilshod Karimov", "ADMIN", "Sergeli Filiali"),
-                # 2 Ta Navbatchi Operator
-                ("operator1", "operator123", "Farrux Yusupov", "OPERATOR", "Smena 1 (08:00 - 16:00)"),
-                ("operator2", "operator123", "G'ayrat Xoliqov", "OPERATOR", "Smena 2 (16:00 - 00:00)"),
+                # 2 Ta Super-Admin
+                ("dilshod_pm", "admin123", "Samaxov Dilshod", "SUPER_ADMIN", "Product Manager (PM)"),
+                ("mirhamid_be", "admin123", "Erjigitov Mirhamid", "SUPER_ADMIN", "Backend / Algoritm"),
+                # 4 Ta Admin
+                ("hikmatilla_fe", "admin123", "Toxirjonov Hikmatilla", "ADMIN", "Frontend / Admin Panel"),
+                ("jaloliddin_iot", "admin123", "Mamarasulov Jaloliddin", "ADMIN", "IoT Muhandisi"),
+                ("omirboyev_cv", "admin123", "Omirboyev Said", "ADMIN", "Computer Vision (ANPR)"),
+                ("abbosxon_qa", "admin123", "Saidov Abbosxon", "ADMIN", "QA & DevOps"),
             ]
             cursor.executemany("""
                 INSERT INTO staff_users (username, password, full_name, role, shift)
