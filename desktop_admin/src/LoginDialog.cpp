@@ -18,7 +18,7 @@ void LoginDialog::setupUI() {
     mainLayout->setSpacing(0);
 
     // ==========================================
-    // 1. CHAP TOMON (BRANDING & ILLUSTRATION - Image 3 dagi kabi)
+    // 1. CHAP TOMON (BRANDING & ILLUSTRATION)
     // ==========================================
     QFrame *leftFrame = new QFrame(this);
     leftFrame->setFixedWidth(320);
@@ -58,12 +58,10 @@ void LoginDialog::setupUI() {
         "• Real-time ANPR kamera oqimi\n"
         "• 2D interaktiv slotlar xaritasi\n"
         "• Avtomatlashgan to'lov va shlagbaum\n"
-        "• Super-Admin va 5 ta operator nazorati", leftFrame);
+        "• Super-Admin va Operator nazorati", leftFrame);
     descLabel->setStyleSheet("font-size: 11px; color: #99f6e4; line-height: 1.5; margin-top: 15px;");
     descLabel->setWordWrap(true);
 
-    leftLayout->addWidget(logoLabel);
-    leftLayout->addWidget(iconLabel);
     leftLayout->addWidget(subTitle);
     leftLayout->addWidget(descLabel);
     leftLayout->addStretch();
@@ -73,7 +71,7 @@ void LoginDialog::setupUI() {
     leftLayout->addWidget(footerLeft);
 
     // ==========================================
-    // 2. O'NG TOMON (LOGIN FORMASI - Image 3 dagi kabi)
+    // 2. O'NG TOMON (LOGIN FORMASI)
     // ==========================================
     QFrame *rightFrame = new QFrame(this);
     rightFrame->setStyleSheet("background-color: #ffffff; border-top-right-radius: 12px; border-bottom-right-radius: 12px;");
@@ -92,8 +90,8 @@ void LoginDialog::setupUI() {
     uLabel->setStyleSheet("font-size: 12px; font-weight: 600; color: #334155;");
 
     m_usernameEdit = new QLineEdit(rightFrame);
-    m_usernameEdit->setPlaceholderText("admin yoki operator1");
-    m_usernameEdit->setText("admin"); // Sinov uchun qulaylik
+    m_usernameEdit->setPlaceholderText("mirhamid_be yoki dilshod_pm");
+    m_usernameEdit->setText("mirhamid_be");
     m_usernameEdit->setStyleSheet(R"(
         QLineEdit {
             border: 1px solid #cbd5e1;
@@ -115,7 +113,7 @@ void LoginDialog::setupUI() {
     m_passwordEdit = new QLineEdit(rightFrame);
     m_passwordEdit->setEchoMode(QLineEdit::Password);
     m_passwordEdit->setPlaceholderText("••••••••");
-    m_passwordEdit->setText("admin123"); // Sinov uchun qulaylik
+    m_passwordEdit->setText("parkly2026");
     m_passwordEdit->setStyleSheet(R"(
         QLineEdit {
             border: 1px solid #cbd5e1;
@@ -159,7 +157,7 @@ void LoginDialog::setupUI() {
     )");
     connect(m_loginButton, &QPushButton::clicked, this, &LoginDialog::onLoginClicked);
 
-    QLabel *hintLabel = new QLabel("🔑 Sinov: Super-Admin: <b>admin</b> / <b>admin123</b> | Operator: <b>operator1</b> / <b>operator123</b>", rightFrame);
+    QLabel *hintLabel = new QLabel("🔑 Sinov: Super-Admin: <b>mirhamid_be</b> / <b>parkly2026</b> | Admin: <b>hikmatilla_fe</b> / <b>parkly2026</b>", rightFrame);
     hintLabel->setStyleSheet("font-size: 10px; color: #94a3b8;");
     hintLabel->setWordWrap(true);
 
@@ -188,23 +186,45 @@ void LoginDialog::onLoginClicked() {
         return;
     }
 
-    // Rollar bo'yicha autentifikatsiya tekshiruvi:
-    if (u == "admin" && p == "admin123") {
-        m_username = "erjigitvv5";
-        m_fullName = "Erjigit (Bosh Rahbar)";
-        m_role = "SUPER_ADMIN";
-        accept();
-    } else if (u == "manager" && p == "manager123") {
-        m_username = "sherzod_ali";
-        m_fullName = "Sherzod Aliyev (Filial Admini)";
-        m_role = "ADMIN";
-        accept();
-    } else if ((u == "operator1" || u == "operator") && p == "operator123") {
-        m_username = "aziz_rustamov";
-        m_fullName = "Aziz Rustamov (Smena 1)";
-        m_role = "OPERATOR";
-        accept();
-    } else {
-        m_errorLabel->setText("❌ Noto'g'ri login yoki parol kiritildi!");
+    if (p == "parkly2026" || p == "admin123") {
+        if (u == "dilshod_pm") {
+            m_username = "dilshod_pm";
+            m_fullName = "Samaxov Dilshod";
+            m_role = "SUPER_ADMIN";
+            accept();
+            return;
+        } else if (u == "mirhamid_be" || u == "admin") {
+            m_username = "mirhamid_be";
+            m_fullName = "Erjigitov Mirhamid";
+            m_role = "SUPER_ADMIN";
+            accept();
+            return;
+        } else if (u == "hikmatilla_fe" || u == "manager") {
+            m_username = "hikmatilla_fe";
+            m_fullName = "Tohirjonov Hikmatilla";
+            m_role = "ADMIN";
+            accept();
+            return;
+        } else if (u == "jaloliddin_iot") {
+            m_username = "jaloliddin_iot";
+            m_fullName = "Mamasarulov Jaloliddin";
+            m_role = "ADMIN";
+            accept();
+            return;
+        } else if (u == "abbosxon_qa") {
+            m_username = "abbosxon_qa";
+            m_fullName = "Saidov Abbosxon";
+            m_role = "ADMIN";
+            accept();
+            return;
+        } else if (u == "omirboyev_cv" || u == "operator1" || u == "operator") {
+            m_username = "omirboyev_cv";
+            m_fullName = "Omirboyev Said";
+            m_role = "ADMIN";
+            accept();
+            return;
+        }
     }
+
+    m_errorLabel->setText("❌ Noto'g'ri login yoki parol kiritildi!");
 }

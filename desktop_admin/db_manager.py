@@ -169,30 +169,29 @@ class ParklyDatabase:
             conn.commit()
 
     def _seed_default_data(self, cursor):
-        # 1. Xodimlar mavjudligini tekshirish (Super-Admin: 2 kishi, Oddiy Admin: 4 kishi, Operator: 2 kishi)
-        cursor.execute("SELECT COUNT(*) FROM staff_users WHERE role = 'SUPER_ADMIN'")
-        super_cnt = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM staff_users WHERE role = 'ADMIN'")
-        admin_cnt = cursor.fetchone()[0]
+        # 1. Xodimlar mavjudligini tekshirish (Super-Admin: 2 kishi, Admin: 4 kishi)
+        cursor.execute("SELECT COUNT(*) FROM staff_users WHERE username = 'mirhamid_be'")
+        has_real_team = (cursor.fetchone()[0] > 0)
 
-        if super_cnt != 2 or admin_cnt != 4:
+        if not has_real_team:
             cursor.execute("DELETE FROM staff_users")
             default_staff = [
-                # 2 Ta Super-Admin (Tizimning to'liq arxitekturasi, uskunalar va xodimlar boshqaruvi)
-                ("admin", "admin123", "Erjigit (Bosh Rahbar)", "SUPER_ADMIN", "Boshqaruv / Barcha hudud"),
-                ("superadmin2", "admin123", "Sherzod Aliyev (Tizim Arxitektori)", "SUPER_ADMIN", "Texnik va Tizim Boshqaruvi"),
-                # 4 Ta Oddiy Admin (Operatsion jarayon, tushumlarni monitoring qilish, tranzaksiyalar va navbatchilik)
-                ("admin_yunusobod", "admin123", "Jahongir Qodirov", "ADMIN", "Yunusobod Filiali"),
-                ("admin_chilonzor", "admin123", "Aziz Rustamov", "ADMIN", "Chilonzor Filiali"),
-                ("admin_mirobod", "admin123", "Bobur Mirzayev", "ADMIN", "Mirobod Filiali"),
-                ("admin_sergeli", "admin123", "Dilshod Karimov", "ADMIN", "Sergeli Filiali"),
-                # 2 Ta Navbatchi Operator
-                ("operator1", "operator123", "Farrux Yusupov", "OPERATOR", "Smena 1 (08:00 - 16:00)"),
-                ("operator2", "operator123", "G'ayrat Xoliqov", "OPERATOR", "Smena 2 (16:00 - 00:00)"),
+                # 2 Ta Super-Admin
+                ("dilshod_pm", "admin123", "Samaxov Dilshod", "SUPER_ADMIN", "Product Manager (PM)", 1),
+                ("mirhamid_be", "admin123", "Erjigitov Mirhamid", "SUPER_ADMIN", "Backend & Algoritm", 1),
+                ("admin", "admin123", "Erjigitov Mirhamid (Super-Admin)", "SUPER_ADMIN", "Markaziy Boshqaruv", 1),
+                # 4 Ta Admin
+                ("hikmatilla_fe", "admin123", "Toxirjonov Hikmatilla", "ADMIN", "Frontend / Admin Panel", 1),
+                ("jaloliddin_iot", "admin123", "Mamarasulov Jaloliddin", "ADMIN", "IoT Muhandisi", 1),
+                ("omirboyev_cv", "admin123", "Omirboyev Said", "ADMIN", "Computer Vision (ANPR)", 1),
+                ("abbosxon_qa", "admin123", "Saidov Abbosxon", "ADMIN", "QA & DevOps", 1),
+                # 2 Ta Smena Operatori
+                ("operator1", "operator123", "Farrux Yusupov", "OPERATOR", "Smena 1 (08:00 - 16:00)", 1),
+                ("operator2", "operator123", "G'ayrat Xoliqov", "OPERATOR", "Smena 2 (16:00 - 00:00)", 1),
             ]
             cursor.executemany("""
-                INSERT INTO staff_users (username, password, full_name, role, shift)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO staff_users (username, password, full_name, role, shift, is_active)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, default_staff)
 
         # 2. Slotlar mavjudligini tekshirish (4 ta qavat, jami 56 ta slot)
@@ -636,7 +635,7 @@ class ParklyDatabase:
         """Barcha xodimlar"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, username, full_name, role, shift FROM staff_users ORDER BY id ASC")
+            cursor.execute("SELECT id, username, full_name, role, shift, is_active FROM staff_users ORDER BY id ASC")
             return [dict(r) for r in cursor.fetchall()]
 
     def add_staff(self, username, password, full_name, role, shift):
@@ -654,7 +653,7 @@ class ParklyDatabase:
         except sqlite3.IntegrityError:
             return False
 
-    def update_staff(self, staff_id, full_name, username, role, shift, password=None):
+    def update_staff(self, staff_id, full_name, username, role, shift, password=None, is_active=1):
         """Xodim ma'lumotlarini tahrirlash (Edit Staff)"""
         try:
             with self.get_connection() as conn:
@@ -667,15 +666,15 @@ class ParklyDatabase:
                 if password and password.strip():
                     cursor.execute("""
                         UPDATE staff_users
-                        SET full_name = ?, username = ?, role = ?, shift = ?, password = ?
+                        SET full_name = ?, username = ?, role = ?, shift = ?, is_active = ?, password = ?
                         WHERE id = ?
-                    """, (full_name, username, role, shift, password.strip(), staff_id))
+                    """, (full_name, username, role, shift, is_active, password.strip(), staff_id))
                 else:
                     cursor.execute("""
                         UPDATE staff_users
-                        SET full_name = ?, username = ?, role = ?, shift = ?
+                        SET full_name = ?, username = ?, role = ?, shift = ?, is_active = ?
                         WHERE id = ?
-                    """, (full_name, username, role, shift, staff_id))
+                    """, (full_name, username, role, shift, is_active, staff_id))
                 conn.commit()
                 self.add_notification("Xodim tahrirlandi", f"{full_name} ({username}) ma'lumotlari yangilandi.", "INFO")
                 return True, "Xodim ma'lumotlari muvaffaqiyatli saqlandi!"
@@ -690,7 +689,7 @@ class ParklyDatabase:
             user = cursor.fetchone()
             if not user:
                 return False, "Xodim topilmadi!"
-            if user["username"] == "admin":
+            if user["username"] in ("admin", "mirhamid_be", "dilshod_pm"):
                 return False, "Asosiy Super-Admin (admin) tizimdan o'chirilishi mumkin emas!"
             cursor.execute("DELETE FROM staff_users WHERE id = ?", (staff_id,))
             conn.commit()
@@ -1044,12 +1043,39 @@ class ParklyDatabase:
     # --------------------------------------------------------------------------
     # XABARNOMALAR (NOTIFICATIONS)
     # --------------------------------------------------------------------------
-    def get_notifications(self, limit=15):
-        """Barcha bildirishnomalar ro'yxati"""
+    def get_notifications(self, limit=50, filter_type=None):
+        """Barcha bildirishnomalar ro'yxati (filtrlash bilan)"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM system_notifications ORDER BY id DESC LIMIT ?", (limit,))
+            if filter_type and filter_type != "ALL":
+                cursor.execute("SELECT * FROM system_notifications WHERE type = ? ORDER BY id DESC LIMIT ?", (filter_type, limit))
+            else:
+                cursor.execute("SELECT * FROM system_notifications ORDER BY id DESC LIMIT ?", (limit,))
             return [dict(r) for r in cursor.fetchall()]
+
+    def mark_notification_read(self, notif_id):
+        """Bitta xabarnomani o'qilgan deb belgilash"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE system_notifications SET is_read = 1 WHERE id = ?", (notif_id,))
+            conn.commit()
+            return True
+
+    def delete_notification(self, notif_id):
+        """Bitta xabarnomani o'chirish"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM system_notifications WHERE id = ?", (notif_id,))
+            conn.commit()
+            return True
+
+    def clear_all_notifications(self):
+        """Barcha xabarnomalarni tozalash"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM system_notifications")
+            conn.commit()
+            return True
 
     def get_unread_notifications_count(self):
         """O'qilmagan xabarnomalar soni"""

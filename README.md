@@ -60,7 +60,7 @@
 
 ## 🚀 O'rnatish va Ishga Tushirish
 
-```bash
+`ash
 # 1. Repozitoriyani klonlash
 git clone https://github.com/Parkly-uz/Parkly.uz.git
 cd Parkly.uz
@@ -73,7 +73,16 @@ python -m unittest tests/test_core_engine.py
 
 # 4. API Serverni ishga tushirish
 uvicorn main:app --reload --port 8000
-```
+`
+
+---
+
+## 🚀 Texnologik stek (Tavsiya etilgan)
+- **Backend:** Python (FastAPI) + PostgreSQL + Redis
+- **Frontend / Web Admin:** Next.js 16 + React Three Fiber (3D) + Tailwind CSS + Supabase
+- **IoT & Hardware:** ESP32-CAM (AI-Thinker), IR Sensor, Relay, Servo Motor
+- **Computer Vision:** OpenCV + YOLOv8 ANPR OCR
+- **DevOps:** GitHub Actions (CI/CD)
 
 ---
 

@@ -98,7 +98,7 @@
 
 ---
 
-## ⚙️ MODUL 3: Dasturlash Muhiti, Docker va CI/CD (Tasks 21–30)
+## ⚙️ MODUL 3: Dasturlash Muhiti va CI/CD (Tasks 21–30)
 
 21. **TASK-021: Repozitoriya papkalar strukturasini standartlashtirish**
     - *Tavsif:* `/backend`, `/desktop_admin`, `/simulator`, `/tests`, `/docs` toza va modulli strukturasi.
@@ -108,13 +108,13 @@
     - *Tavsif:* Muhit o'zgaruvchilari (Development, Test, Production) xavfsiz boshqaruvi.
     - *Qatlam:* DevOps / Python | *SP:* 2
 
-23. **TASK-023: PostgreSQL va Redis uchun `docker-compose.yml` sozlash**
-    - *Tavsif:* Barcha ishlab chiquvchilar uchun 1 ta buyruq bilan ma'lumotlar bazasini ko'tarish.
-    - *Qatlam:* Docker | *SP:* 3
+23. **TASK-023: Lokal PostgreSQL va Redis serverini native o'rnatish va sozlash**
+    - *Tavsif:* Ishlab chiquvchilar uchun to'g'ridan-to'g'ri operatsion tizimda DB va Cache muhitini tayyorlash.
+    - *Qatlam:* Native Setup | *SP:* 3
 
-24. **TASK-024: Python Backend uchun Dockerfile yaratish**
-    - *Tavsif:* Multi-stage build, minimal xavfsiz python-slim imij.
-    - *Qatlam:* Docker | *SP:* 3
+24. **TASK-024: Python virtual environment va paketlar menejmenti**
+    - *Tavsif:* venv yaratish va talab qilinadigan kutubxonalarni sozlash.
+    - *Qatlam:* Python | *SP:* 2
 
 25. **TASK-025: C/C++ simulyatori uchun CMakeLists.txt sozlash**
     - *Tavsif:* CMakeLists.txt, Qt5/Qt6 bog'lamalari va avtomatik kompilyatsiya.

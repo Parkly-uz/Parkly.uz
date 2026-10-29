@@ -159,7 +159,7 @@ class LoginDialog(QDialog):
         super().__init__(parent)
         self.db = db
         self.setWindowTitle("Parkly.uz — Tizimga Kirish")
-        self.setFixedSize(780, 500)
+        self.setFixedSize(840, 550)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self.user_data = None
         self.setup_ui()
@@ -304,54 +304,122 @@ class LoginDialog(QDialog):
         self.btn_login.clicked.connect(self.attempt_login)
         r_layout.addWidget(self.btn_login)
 
-        # 3. Sinov hisoblari paneli (Rasmdagi qizil ramkali qism — bir klikda to'ldiriladi)
-        test_box = QFrame(right_frame)
-        test_box.setStyleSheet("""
+        # 3. Barcha Xodimlar Login va Parollari (Interaktiv bir klikda to'ldirish paneli)
+        creds_box = QFrame(right_frame)
+        creds_box.setStyleSheet("""
             QFrame {
                 background: #f8fafc;
-                border: 1px dashed #cbd5e1;
-                border-radius: 8px;
+                border: 1px solid #cbd5e1;
+                border-radius: 10px;
                 padding: 8px;
-                margin-top: 8px;
+                margin-top: 4px;
             }
         """)
-        tb_layout = QHBoxLayout(test_box)
-        tb_layout.setContentsMargins(6, 4, 6, 4)
+        cb_layout = QVBoxLayout(creds_box)
+        cb_layout.setContentsMargins(8, 6, 8, 6)
+        cb_layout.setSpacing(6)
 
-        tb_lbl = QLabel("Sinov:", test_box)
-        tb_lbl.setStyleSheet("font-size: 11px; font-weight: 700; color: #64748b;")
-        tb_layout.addWidget(tb_lbl)
+        cb_title = QLabel("⚡ Tezkor Kirish (Akkaunt ustiga bosing):", creds_box)
+        cb_title.setStyleSheet("font-size: 11.5px; font-weight: 800; color: #0f172a;")
+        cb_layout.addWidget(cb_title)
 
-        btn_fill_admin = QPushButton("Super-Admin", test_box)
-        btn_fill_admin.setToolTip("Erjigit (Bosh Rahbar) - To'liq boshqaruv")
-        btn_fill_admin.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fill_admin.setStyleSheet("color: #0d9488; font-weight: 700; font-size: 11px; border: none; background: transparent;")
-        btn_fill_admin.clicked.connect(lambda: self.fill_credentials("admin", "admin123"))
-        tb_layout.addWidget(btn_fill_admin)
+        # Super-Adminlar qatori
+        sa_row = QHBoxLayout()
+        sa_row.setSpacing(4)
+        lbl_sa = QLabel("👑 Super:", creds_box)
+        lbl_sa.setStyleSheet("font-size: 10px; font-weight: 700; color: #7c3aed;")
+        sa_row.addWidget(lbl_sa)
 
-        tb_div1 = QLabel("|", test_box)
-        tb_div1.setStyleSheet("color: #cbd5e1;")
-        tb_layout.addWidget(tb_div1)
+        for uname, pwd, title, tip in [
+            ("mirhamid_be", "admin123", "Mirhamid", "Erjigitov Mirhamid — Backend & Boshqaruv (Super-Admin)"),
+            ("dilshod_pm", "admin123", "Dilshod", "Samaxov Dilshod — Product Manager (Super-Admin)"),
+            ("admin", "admin123", "Admin", "Bosh Administrator (Super-Admin)"),
+        ]:
+            b = QPushButton(title, creds_box)
+            b.setToolTip(f"{tip}\nLogin: {uname} / Parol: {pwd}")
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setStyleSheet("""
+                QPushButton {
+                    background: #f5f3ff;
+                    color: #6d28d9;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    border: 1px solid #ddd6fe;
+                    border-radius: 5px;
+                    padding: 3px 6px;
+                }
+                QPushButton:hover { background: #ede9fe; border-color: #c4b5fd; }
+            """)
+            b.clicked.connect(lambda ch, u=uname, p=pwd: self.fill_credentials(u, p))
+            sa_row.addWidget(b)
+        sa_row.addStretch()
+        cb_layout.addLayout(sa_row)
 
-        btn_fill_subadmin = QPushButton("Oddiy Admin", test_box)
-        btn_fill_subadmin.setToolTip("Jahongir Qodirov - Yunusobod filiali (Monitoring)")
-        btn_fill_subadmin.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fill_subadmin.setStyleSheet("color: #0284c7; font-weight: 700; font-size: 11px; border: none; background: transparent;")
-        btn_fill_subadmin.clicked.connect(lambda: self.fill_credentials("admin_yunusobod", "admin123"))
-        tb_layout.addWidget(btn_fill_subadmin)
+        # Adminlar qatori
+        adm_row = QHBoxLayout()
+        adm_row.setSpacing(4)
+        lbl_adm = QLabel("👔 Admin:", creds_box)
+        lbl_adm.setStyleSheet("font-size: 10px; font-weight: 700; color: #0369a1;")
+        adm_row.addWidget(lbl_adm)
 
-        tb_div2 = QLabel("|", test_box)
-        tb_div2.setStyleSheet("color: #cbd5e1;")
-        tb_layout.addWidget(tb_div2)
+        for uname, pwd, title, tip in [
+            ("hikmatilla_fe", "admin123", "Hikmatilla", "Toxirjonov Hikmatilla — Frontend / UI (Admin)"),
+            ("jaloliddin_iot", "admin123", "Jaloliddin", "Mamarasulov Jaloliddin — IoT & ESP32 (Admin)"),
+            ("omirboyev_cv", "admin123", "Said", "Omirboyev Said — Computer Vision & ANPR (Admin)"),
+            ("abbosxon_qa", "admin123", "Abbosxon", "Saidov Abbosxon — QA & DevOps (Admin)"),
+        ]:
+            b = QPushButton(title, creds_box)
+            b.setToolTip(f"{tip}\nLogin: {uname} / Parol: {pwd}")
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setStyleSheet("""
+                QPushButton {
+                    background: #f0f9ff;
+                    color: #0369a1;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    border: 1px solid #bae6fd;
+                    border-radius: 5px;
+                    padding: 3px 6px;
+                }
+                QPushButton:hover { background: #e0f2fe; border-color: #7dd3fc; }
+            """)
+            b.clicked.connect(lambda ch, u=uname, p=pwd: self.fill_credentials(u, p))
+            adm_row.addWidget(b)
+        adm_row.addStretch()
+        cb_layout.addLayout(adm_row)
 
-        btn_fill_op = QPushButton("Operator", test_box)
-        btn_fill_op.setToolTip("Farrux Yusupov - Smena 1")
-        btn_fill_op.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_fill_op.setStyleSheet("color: #64748b; font-weight: 700; font-size: 11px; border: none; background: transparent;")
-        btn_fill_op.clicked.connect(lambda: self.fill_credentials("operator1", "operator123"))
-        tb_layout.addWidget(btn_fill_op)
+        # Operatorlar qatori
+        op_row = QHBoxLayout()
+        op_row.setSpacing(4)
+        lbl_op = QLabel("🛡️ Operator:", creds_box)
+        lbl_op.setStyleSheet("font-size: 10px; font-weight: 700; color: #047857;")
+        op_row.addWidget(lbl_op)
 
-        r_layout.addWidget(test_box)
+        for uname, pwd, title, tip in [
+            ("operator1", "operator123", "Farrux (1-sm)", "Farrux Yusupov — 1-Smena (08:00 - 16:00)"),
+            ("operator2", "operator123", "G'ayrat (2-sm)", "G'ayrat Xoliqov — 2-Smena (16:00 - 00:00)"),
+        ]:
+            b = QPushButton(title, creds_box)
+            b.setToolTip(f"{tip}\nLogin: {uname} / Parol: {pwd}")
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setStyleSheet("""
+                QPushButton {
+                    background: #ecfdf5;
+                    color: #047857;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    border: 1px solid #a7f3d0;
+                    border-radius: 5px;
+                    padding: 3px 6px;
+                }
+                QPushButton:hover { background: #d1fae5; border-color: #6ee7b7; }
+            """)
+            b.clicked.connect(lambda ch, u=uname, p=pwd: self.fill_credentials(u, p))
+            op_row.addWidget(b)
+        op_row.addStretch()
+        cb_layout.addLayout(op_row)
+
+        r_layout.addWidget(creds_box)
         r_layout.addStretch()
 
         main_layout.addWidget(right_frame)
@@ -378,6 +446,399 @@ class LoginDialog(QDialog):
 # ==============================================================================
 # 2. ADMIN PROFILI VA PAROLNI SOZLASH DIALOGI
 # ==============================================================================
+
+# ==============================================================================
+# 2.2 MUKAMMAL TIZIM BILDIRISHNOMALARI PANELI (MODERN NOTIFICATION DIALOG)
+# ==============================================================================
+class ModernNotificationDialog(QDialog):
+    """
+    Parkly.uz — Zamonaviy va chiroyli Tizim Bildirishnomalari Paneli.
+    Real-time ogohlantirishlar, SLA holati, to'lovlar va xavfsizlik hodisalarini
+    mukammal kartochkalar ko'rinishida taqdim etadi.
+    """
+    def __init__(self, db: ParklyDatabase, parent=None):
+        super().__init__(parent)
+        self.db = db
+        self.current_filter = "ALL"  # ALL, ALERTS, SUCCESS_INFO
+        self.setWindowTitle("Tizim Bildirishnomalari va Ogohlantirishlar — Parkly.uz")
+        self.setFixedSize(600, 680)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+        self.setup_ui()
+        self.load_notifications()
+
+    def setup_ui(self):
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f8fafc;
+                font-family: 'Segoe UI', -apple-system, sans-serif;
+            }
+        """)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(14)
+
+        # 1. Header (Icon, Title, Unread Badge, Actions)
+        top_box = QHBoxLayout()
+        top_box.setSpacing(12)
+
+        icon_lbl = QLabel(self)
+        icon_lbl.setPixmap(get_icon("bell.svg").pixmap(24, 24))
+        top_box.addWidget(icon_lbl)
+
+        t_vbox = QVBoxLayout()
+        t_vbox.setSpacing(2)
+        h_title = QLabel("Tizim Bildirishnomalari", self)
+        h_title.setStyleSheet("font-size: 18px; font-weight: 800; color: #0f172a;")
+        t_vbox.addWidget(h_title)
+
+        self.lbl_sub = QLabel("Real-vaqt hodisalari, SLA monitoringi va xavfsizlik signallari", self)
+        self.lbl_sub.setStyleSheet("font-size: 11px; color: #64748b; font-weight: 500;")
+        t_vbox.addWidget(self.lbl_sub)
+        top_box.addLayout(t_vbox)
+
+        top_box.addStretch()
+
+        self.lbl_unread_badge = QLabel(self)
+        self.lbl_unread_badge.setStyleSheet("""
+            background: #fee2e2;
+            color: #b91c1c;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid #fecaca;
+        """)
+        top_box.addWidget(self.lbl_unread_badge)
+
+        layout.addLayout(top_box)
+
+        # 2. Control Row: Filter tabs & action buttons
+        ctrl_row = QHBoxLayout()
+        ctrl_row.setSpacing(8)
+
+        self.btn_f_all = QPushButton("Barchasi", self)
+        self.btn_f_all.setCheckable(True)
+        self.btn_f_all.setChecked(True)
+        self.btn_f_all.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_f_all.clicked.connect(lambda: self.set_filter("ALL"))
+
+        self.btn_f_alerts = QPushButton("🚨 Xavf & Ogohlantirish", self)
+        self.btn_f_alerts.setCheckable(True)
+        self.btn_f_alerts.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_f_alerts.clicked.connect(lambda: self.set_filter("ALERTS"))
+
+        self.btn_f_info = QPushButton("✅ Tizim & Kassa", self)
+        self.btn_f_info.setCheckable(True)
+        self.btn_f_info.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_f_info.clicked.connect(lambda: self.set_filter("SUCCESS_INFO"))
+
+        filter_style = """
+            QPushButton {
+                background: #ffffff;
+                color: #475569;
+                font-weight: 600;
+                font-size: 11px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            QPushButton:hover { background: #f1f5f9; color: #0d9488; }
+            QPushButton:checked {
+                background: #ccfbf1;
+                color: #0f766e;
+                font-weight: 800;
+                border-color: #99f6e4;
+            }
+        """
+        for b in [self.btn_f_all, self.btn_f_alerts, self.btn_f_info]:
+            b.setStyleSheet(filter_style)
+            ctrl_row.addWidget(b)
+
+        ctrl_row.addStretch()
+
+        btn_mark_all = QPushButton("✓ O'qilgan deb belgilash", self)
+        btn_mark_all.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_mark_all.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: #0d9488;
+                font-weight: 700;
+                font-size: 11.5px;
+                border: none;
+                padding: 4px 6px;
+            }
+            QPushButton:hover { text-decoration: underline; color: #0f766e; }
+        """)
+        btn_mark_all.clicked.connect(self.mark_all_read)
+        ctrl_row.addWidget(btn_mark_all)
+
+        btn_clear = QPushButton("Tozalash", self)
+        btn_clear.setIcon(get_icon("trash.svg"))
+        btn_clear.setToolTip("Barcha bildirishnomalarni tozalash")
+        btn_clear.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_clear.setStyleSheet("""
+            QPushButton {
+                background: #ffffff;
+                color: #ef4444;
+                font-weight: 600;
+                font-size: 11px;
+                border: 1px solid #fecaca;
+                border-radius: 6px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover { background: #fee2e2; }
+        """)
+        btn_clear.clicked.connect(self.clear_all)
+        ctrl_row.addWidget(btn_clear)
+
+        layout.addLayout(ctrl_row)
+
+        # 3. Scroll Area with notification cards
+        self.scroll = QScrollArea(self)
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setStyleSheet("""
+            QScrollArea {
+                background: transparent;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+            }
+        """)
+
+        self.list_container = QWidget()
+        self.list_layout = QVBoxLayout(self.list_container)
+        self.list_layout.setContentsMargins(12, 12, 12, 12)
+        self.list_layout.setSpacing(10)
+        self.list_layout.addStretch()
+        self.scroll.setWidget(self.list_container)
+        layout.addWidget(self.scroll, stretch=1)
+
+        # 4. Footer Row
+        foot_row = QHBoxLayout()
+        self.lbl_count = QLabel("Jami: 0 ta bildirishnoma", self)
+        self.lbl_count.setStyleSheet("font-size: 11.5px; color: #64748b; font-weight: 600;")
+        foot_row.addWidget(self.lbl_count)
+
+        foot_row.addStretch()
+
+        btn_close = QPushButton("Yopish", self)
+        btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_close.setStyleSheet("""
+            QPushButton {
+                background: #0f172a;
+                color: white;
+                font-weight: 700;
+                font-size: 12px;
+                padding: 8px 22px;
+                border-radius: 8px;
+                border: none;
+            }
+            QPushButton:hover { background: #1e293b; }
+        """)
+        btn_close.clicked.connect(self.accept)
+        foot_row.addWidget(btn_close)
+
+        layout.addLayout(foot_row)
+
+    def set_filter(self, f):
+        self.current_filter = f
+        self.btn_f_all.setChecked(f == "ALL")
+        self.btn_f_alerts.setChecked(f == "ALERTS")
+        self.btn_f_info.setChecked(f == "SUCCESS_INFO")
+        self.load_notifications()
+
+    def load_notifications(self):
+        # Eski elementlarni tozalash
+        while self.list_layout.count() > 1:
+            item = self.list_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        notifs = self.db.get_notifications(limit=60)
+        unread_count = self.db.get_unread_notifications_count()
+
+        if unread_count > 0:
+            self.lbl_unread_badge.setText(f"{unread_count} ta yangi")
+            self.lbl_unread_badge.setVisible(True)
+        else:
+            self.lbl_unread_badge.setText("Barchasi o'qilgan")
+            self.lbl_unread_badge.setStyleSheet("""
+                background: #dcfce7;
+                color: #166534;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 4px 10px;
+                border-radius: 12px;
+                border: 1px solid #bbf7d0;
+            """)
+            self.lbl_unread_badge.setVisible(True)
+
+        # Filtr bo'yicha saralash
+        filtered = []
+        for n in notifs:
+            ntype = n.get("type", "INFO").upper()
+            if self.current_filter == "ALL":
+                filtered.append(n)
+            elif self.current_filter == "ALERTS" and ntype in ("ALERT", "WARNING", "CRITICAL"):
+                filtered.append(n)
+            elif self.current_filter == "SUCCESS_INFO" and ntype in ("SUCCESS", "INFO"):
+                filtered.append(n)
+
+        self.lbl_count.setText(f"Jami: {len(filtered)} ta bildirishnoma ({unread_count} ta yangi)")
+
+        if not filtered:
+            empty_box = QWidget()
+            el = QVBoxLayout(empty_box)
+            el.setContentsMargins(0, 40, 0, 40)
+            el.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            e_icon = QLabel(empty_box)
+            e_icon.setPixmap(get_icon("bell.svg").pixmap(48, 48))
+            e_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            el.addWidget(e_icon)
+
+            e_title = QLabel("Bildirishnomalar mavjud emas", empty_box)
+            e_title.setStyleSheet("font-size: 15px; font-weight: 700; color: #475569; margin-top: 10px;")
+            e_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            el.addWidget(e_title)
+
+            e_desc = QLabel("Barcha tizimlar, shlagbaumlar va datchiklar me'yorida ishlamoqda.", empty_box)
+            e_desc.setStyleSheet("font-size: 12px; color: #94a3b8;")
+            e_desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            el.addWidget(e_desc)
+
+            self.list_layout.insertWidget(0, empty_box)
+            return
+
+        for idx, n in enumerate(filtered):
+            card = self._create_notif_card(n)
+            self.list_layout.insertWidget(idx, card)
+
+    def _create_notif_card(self, n):
+        ntype = n.get("type", "INFO").upper()
+        is_unread = (n.get("is_read", 0) == 0)
+
+        type_meta = {
+            "ALERT": {"label": "🚨 FAVQULODDA", "border": "#ef4444", "bg_badge": "#fee2e2", "fg_badge": "#b91c1c"},
+            "WARNING": {"label": "⚠️ OGOHLANTIRISH", "border": "#f59e0b", "bg_badge": "#fef3c7", "fg_badge": "#b45309"},
+            "SUCCESS": {"label": "✅ MUVAFFAQIYAT", "border": "#10b981", "bg_badge": "#dcfce7", "fg_badge": "#15803d"},
+            "INFO": {"label": "ℹ️ AXBOROT", "border": "#0d9488", "bg_badge": "#ccfbf1", "fg_badge": "#0f766e"},
+        }
+        meta = type_meta.get(ntype, type_meta["INFO"])
+
+        card = QFrame()
+        card_bg = "#ffffff" if not is_unread else "#f8fafc"
+        card_border = meta["border"] if is_unread else "#e2e8f0"
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {card_bg};
+                border: 1px solid {card_border};
+                border-left: 5px solid {meta["border"]};
+                border-radius: 10px;
+                padding: 10px 14px;
+            }}
+        """)
+
+        cl = QVBoxLayout(card)
+        cl.setContentsMargins(6, 6, 6, 6)
+        cl.setSpacing(6)
+
+        # Yuqori qator: Badge, Vaqt, Yangi belgisi, O'chirish
+        th = QHBoxLayout()
+        th.setSpacing(8)
+
+        type_badge = QLabel(meta["label"], card)
+        type_badge.setStyleSheet(f"""
+            background: {meta["bg_badge"]};
+            color: {meta["fg_badge"]};
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+        """)
+        th.addWidget(type_badge)
+
+        time_str = n.get("created_at", "")
+        if time_str:
+            t_lbl = QLabel(f"🕒 {time_str}", card)
+            t_lbl.setStyleSheet("font-size: 10.5px; color: #94a3b8; font-weight: 500;")
+            th.addWidget(t_lbl)
+
+        th.addStretch()
+
+        if is_unread:
+            btn_read = QPushButton("O'qildi", card)
+            btn_read.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_read.setStyleSheet("""
+                QPushButton {
+                    background: #f0fdfa;
+                    color: #0d9488;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    border: 1px solid #99f6e4;
+                    border-radius: 6px;
+                    padding: 2px 8px;
+                }
+                QPushButton:hover { background: #ccfbf1; }
+            """)
+            btn_read.clicked.connect(lambda ch, nid=n["id"]: self.mark_single_read(nid))
+            th.addWidget(btn_read)
+
+        btn_del = QPushButton("×", card)
+        btn_del.setToolTip("Ushbu xabarnomani o'chirish")
+        btn_del.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_del.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: #94a3b8;
+                font-size: 14px;
+                font-weight: 700;
+                border: none;
+                padding: 0 4px;
+            }
+            QPushButton:hover { color: #ef4444; }
+        """)
+        btn_del.clicked.connect(lambda ch, nid=n["id"]: self.delete_single_notif(nid))
+        th.addWidget(btn_del)
+
+        cl.addLayout(th)
+
+        # Sarlavha
+        title_lbl = QLabel(n.get("title", "Bildirishnoma"), card)
+        title_lbl.setStyleSheet("font-size: 13px; font-weight: 800; color: #0f172a;")
+        cl.addWidget(title_lbl)
+
+        # Xabar matni
+        msg_lbl = QLabel(n.get("message", ""), card)
+        msg_lbl.setWordWrap(True)
+        msg_lbl.setStyleSheet("font-size: 12px; color: #334155; line-height: 1.4;")
+        cl.addWidget(msg_lbl)
+
+        return card
+
+    def mark_single_read(self, notif_id):
+        self.db.mark_notification_read(notif_id)
+        self.load_notifications()
+
+    def delete_single_notif(self, notif_id):
+        self.db.delete_notification(notif_id)
+        self.load_notifications()
+
+    def mark_all_read(self):
+        self.db.mark_all_notifications_read()
+        self.load_notifications()
+
+    def clear_all(self):
+        reply = QMessageBox.question(
+            self, "Tozalashni Tasdiqlash",
+            "Haqiqatan ham barcha bildirishnomalarni butunlay tozalab tashlamoqchimisiz?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.db.clear_all_notifications()
+            self.load_notifications()
+
+
 class AdminProfileDialog(QDialog):
     def __init__(self, db: ParklyDatabase, user_data: dict, parent=None):
         super().__init__(parent)
@@ -866,7 +1327,7 @@ class EditStaffDialog(QDialog):
         self.staff_data = staff_data
         self.db = db
         self.setWindowTitle(f"Xodimni Tahrirlash — {staff_data.get('full_name')}")
-        self.setFixedSize(400, 430)
+        self.setFixedSize(400, 470)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self.setup_ui()
 
@@ -906,6 +1367,11 @@ class EditStaffDialog(QDialog):
         self.in_shift.setText(self.staff_data.get("shift", "Smena 1 (08:00 - 16:00)"))
         layout.addWidget(self.in_shift)
 
+        self.chk_active = QCheckBox("Xodim tizimda faol (Kirishga ruxsat berilgan)", self)
+        self.chk_active.setChecked(bool(self.staff_data.get("is_active", 1)))
+        self.chk_active.setStyleSheet("font-size: 12px; color: #0d9488; font-weight: 700; margin-top: 4px;")
+        layout.addWidget(self.chk_active)
+
         layout.addWidget(QLabel("Yangi Parol (Ixtiyoriy):"))
         self.in_pass = QLineEdit(self)
         self.in_pass.setEchoMode(QLineEdit.EchoMode.Password)
@@ -936,9 +1402,11 @@ class EditStaffDialog(QDialog):
             QMessageBox.warning(self, "Diqqat", "F.I.Sh va Login maydonlari to'ldirilishi shart!")
             return
 
+        is_act = 1 if self.chk_active.isChecked() else 0
         ok, msg = self.db.update_staff(
             self.staff_data["id"], name, user, role, shift,
-            password=pw if pw else None
+            password=pw if pw else None,
+            is_active=is_act
         )
         if ok:
             QMessageBox.information(self, "Muvaffaqiyat", msg)
@@ -1364,7 +1832,7 @@ class MainWindow(QMainWindow):
         # Collapsible Drawer (Navigatsiya Menyusi)
         self.drawer = QFrame(self.central_widget)
         self.drawer.setFixedWidth(240)
-        self.drawer.setVisible(False)  # Boshlang'ich holatda yashirilgan!
+        self.drawer.setVisible(True)   # Boshlang'ich holatda ochiq va doim ko'rinib turadi!
         self.drawer.setStyleSheet("""
             QFrame {
                 background: #ffffff;
@@ -1486,6 +1954,11 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(idx)
         self.lbl_module_title.setText(title.replace(" 🔒", "").strip())
 
+        # 2-bo'lim (3D Xarita) tanlanganda slotlarni to'liq qavat bo'yicha yangilab yuklash
+        if idx == 1 and hasattr(self, 'full_iso_map'):
+            fl = getattr(self.full_iso_map, 'floor', 1)
+            self.switch_floor(fl)
+
     def update_user_topbar(self):
         name = self.user_data.get("full_name", "Admin")
         role = self.user_data.get("role", "SUPER_ADMIN")
@@ -1505,10 +1978,8 @@ class MainWindow(QMainWindow):
                 self.update_user_topbar()
 
     def show_notifications(self):
-        notifs = self.db.get_notifications(limit=10)
-        msg = "\n\n".join([f"• [{n['type']}] {n['title']}: {n['message']}" for n in notifs]) or "Xabarnomalar yo'q."
-        QMessageBox.information(self, "Tizim Bildirishnomalari", msg)
-        self.db.mark_all_notifications_read()
+        dlg = ModernNotificationDialog(self.db, self)
+        dlg.exec()
         self.update_user_topbar()
 
     def logout_user(self):
@@ -1995,15 +2466,16 @@ class MainWindow(QMainWindow):
         c_layout = QVBoxLayout(card)
 
         self.table_staff = QTableWidget(card)
-        self.table_staff.setColumnCount(6)
-        self.table_staff.setHorizontalHeaderLabels(["ID", "F.I.SH", "LOGIN", "ROLI", "SMENA / HUDUD", "AMALLAR"])
+        self.table_staff.setColumnCount(7)
+        self.table_staff.setHorizontalHeaderLabels(["ID", "F.I.SH", "LOGIN", "ROLI", "SMENA / MAS'ULIYAT", "STATUS", "AMALLAR"])
         self.table_staff.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table_staff.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table_staff.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table_staff.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.table_staff.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
-        self.table_staff.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
-        self.table_staff.setColumnWidth(5, 200)
+        self.table_staff.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_staff.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+        self.table_staff.setColumnWidth(6, 180)
         self.table_staff.verticalHeader().setVisible(False)
         self.table_staff.setMinimumHeight(240)
         c_layout.addWidget(self.table_staff)
@@ -2071,7 +2543,7 @@ class MainWindow(QMainWindow):
             self.load_staff()
 
     def delete_staff_action(self, staff_id, full_name, username):
-        if username == "admin":
+        if username in ("admin", "mirhamid_be", "dilshod_pm"):
             QMessageBox.warning(self, "Taqiqlangan", "Asosiy Super-Admin (admin) tizimdan o'chirilishi mumkin emas!")
             return
 
@@ -3177,8 +3649,11 @@ class MainWindow(QMainWindow):
             # 3-ustun: Roli badge
             self.table_staff.setCellWidget(r, 3, create_role_badge(s["role"]))
             self.table_staff.setItem(r, 4, QTableWidgetItem(s["shift"]))
+            # 5-ustun: Status badge
+            is_active_flag = bool(s.get("is_active", 1))
+            self.table_staff.setCellWidget(r, 5, create_status_badge("ACTIVE" if is_active_flag else "NOFAOL"))
 
-            # 5-ustun: AMALLAR (Faqat Super-Admin uchun to'liq faol)
+            # 6-ustun: AMALLAR (Faqat Super-Admin uchun to'liq faol)
             act_w = QWidget()
             act_l = QHBoxLayout(act_w)
             act_l.setContentsMargins(4, 2, 4, 2)
@@ -3225,7 +3700,7 @@ class MainWindow(QMainWindow):
             btn_del.clicked.connect(lambda ch, sid=s["id"], sname=s["full_name"], suser=s["username"]: self.delete_staff_action(sid, sname, suser))
             act_l.addWidget(btn_del)
 
-            self.table_staff.setCellWidget(r, 5, act_w)
+            self.table_staff.setCellWidget(r, 6, act_w)
 
     def load_settings(self):
         s = self.db.get_settings()
