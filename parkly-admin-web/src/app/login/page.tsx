@@ -2,92 +2,27 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, ArrowRight, ShieldCheck, Sparkles, KeyRound, Check } from 'lucide-react';
-
-// Rasmiy Jamoa A'zolari va Hisoblar Bazasi (Login va Parollar)
-export const TEAM_ACCOUNTS = [
-  {
-    name: 'Samaxov Dilshod',
-    username: 'dilshod_pm',
-    email: 'dilshod@parkly.uz',
-    password: 'Parkly2026!Pm',
-    role: 'SUPER_ADMIN',
-    roleLabel: 'Super Admin (PM)',
-    color: 'emerald'
-  },
-  {
-    name: 'Erjigitov Mirhamid',
-    username: 'mirhamid_be',
-    email: 'mirhamid@parkly.uz',
-    password: 'Parkly2026!Lead',
-    role: 'SUPER_ADMIN',
-    roleLabel: 'Super Admin (Lead)',
-    color: 'emerald'
-  },
-  {
-    name: 'Tohirjonov Hikmatilla',
-    username: 'hikmatilla_fe',
-    email: 'hikmatilla@parkly.uz',
-    password: 'Parkly2026!Fe',
-    role: 'ADMIN',
-    roleLabel: 'Admin (Frontend)',
-    color: 'cyan'
-  },
-  {
-    name: 'Mamasarulov Jaloliddin',
-    username: 'jaloliddin_iot',
-    email: 'jaloliddin@parkly.uz',
-    password: 'Parkly2026!Iot',
-    role: 'ADMIN',
-    roleLabel: 'Admin (IoT)',
-    color: 'cyan'
-  },
-  {
-    name: 'Saidov Abbosxon',
-    username: 'abbosxon_qa',
-    email: 'abbosxon@parkly.uz',
-    password: 'Parkly2026!Qa',
-    role: 'ADMIN',
-    roleLabel: 'Admin (QA)',
-    color: 'cyan'
-  },
-  {
-    name: 'Omirboyev Said',
-    username: 'omirboyev_cv',
-    email: 'omirboyev@parkly.uz',
-    password: 'Parkly2026!Cv',
-    role: 'ADMIN',
-    roleLabel: 'Admin (CV/ANPR)',
-    color: 'cyan'
-  },
-  // Standart test hisoblar
-  {
-    name: 'Bosh Administrator',
-    username: 'admin',
-    email: 'admin@parkly.uz',
-    password: 'admin123',
-    role: 'SUPER_ADMIN',
-    roleLabel: 'Super Admin (Test)',
-    color: 'emerald'
-  },
-  {
-    name: 'Navbatchi Operator',
-    username: 'operator',
-    email: 'operator@parkly.uz',
-    password: 'operator123',
-    role: 'OPERATOR',
-    roleLabel: 'Operator (Test)',
-    color: 'amber'
-  }
-];
+import { Lock, User, ArrowRight, Sparkles } from 'lucide-react';
+import { TEAM_ACCOUNTS } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loginInput, setLoginInput] = useState('mirhamid_be');
-  const [password, setPassword] = useState('Parkly2026!Lead');
+  const [loginInput, setLoginInput] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(TEAM_ACCOUNTS[1]);
+
+  // Parollar lug'ati
+  const PASSWORDS: Record<string, string> = {
+    dilshod_pm: 'Parkly2026!Pm',
+    mirhamid_be: 'Parkly2026!Lead',
+    hikmatilla_fe: 'Parkly2026!Fe',
+    jaloliddin_iot: 'Parkly2026!Iot',
+    abbosxon_qa: 'Parkly2026!Qa',
+    omirboyev_cv: 'Parkly2026!Cv',
+    admin: 'admin123',
+    operator: 'operator123',
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,32 +31,46 @@ export default function LoginPage() {
 
     setTimeout(() => {
       const cleanInput = loginInput.trim().replace(/^@/, '').toLowerCase();
-      const account = TEAM_ACCOUNTS.find(
-        (acc) =>
-          (acc.username.toLowerCase() === cleanInput || acc.email.toLowerCase() === cleanInput) &&
-          acc.password === password
-      );
 
-      if (account) {
-        // Sessiya ma'lumotlarini saqlash
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('parkly_user', JSON.stringify(account));
-          document.cookie = `parkly_token=valid_token_${account.username}; path=/`;
-          document.cookie = `user_role=${account.role}; path=/`;
-        }
-        router.push('/');
+      // Email yoki username bo'yicha qidirish
+      let foundUsername = '';
+      if (cleanInput.includes('@')) {
+        const prefix = cleanInput.split('@')[0];
+        foundUsername = prefix;
       } else {
-        setError('Login yoki parol noto\'g\'ri! Quyidagi ro\'yxatdan bir klikda tanlang.');
+        foundUsername = cleanInput;
+      }
+
+      // Maxsus hisoblar
+      if (foundUsername === 'admin' && password === 'admin123') {
+        saveSession('admin', 'Bosh Administrator', 'SUPER_ADMIN');
+        return;
+      }
+      if (foundUsername === 'operator' && password === 'operator123') {
+        saveSession('operator', 'Navbatchi Operator', 'ADMIN');
+        return;
+      }
+
+      const account = TEAM_ACCOUNTS[foundUsername];
+      const correctPass = PASSWORDS[foundUsername];
+
+      if (account && correctPass && password === correctPass) {
+        saveSession(account.username, account.fullName, account.role);
+      } else {
+        setError('Login yoki parol noto\'g\'ri! Iltimos, ma\'lumotlaringizni qayta tekshiring.');
         setIsLoading(false);
       }
     }, 600);
   };
 
-  const selectAccount = (acc: typeof TEAM_ACCOUNTS[0]) => {
-    setLoginInput(acc.username);
-    setPassword(acc.password);
-    setSelectedUser(acc);
-    setError('');
+  const saveSession = (username: string, fullName: string, role: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('parkly_user', JSON.stringify({ username, fullName, role }));
+      document.cookie = `parkly_token=valid_token_${username}; path=/; max-age=86400`;
+      document.cookie = `user_role=${role}; path=/; max-age=86400`;
+      document.cookie = `user_name=${encodeURIComponent(fullName)}; path=/; max-age=86400`;
+    }
+    router.push('/');
   };
 
   return (
@@ -151,16 +100,6 @@ export default function LoginPage() {
           <p className="text-slate-400 text-base leading-relaxed">
             ANPR raqam tanish, real vaqt rejimidagi 4 qavatli 3D slot monitoringi va shlagbaum nazorati endi yagona platformada.
           </p>
-
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md space-y-2">
-            <p className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-emerald-400" /> Rasmiy Jamoa Loginlari:
-            </p>
-            <p className="text-xs text-slate-400">
-              Super Adminlar: <code className="text-emerald-400 font-bold">dilshod_pm</code>, <code className="text-emerald-400 font-bold">mirhamid_be</code><br />
-              Adminlar: <code className="text-cyan-400">hikmatilla_fe</code>, <code className="text-cyan-400">jaloliddin_iot</code>, <code className="text-cyan-400">abbosxon_qa</code>, <code className="text-cyan-400">omirboyev_cv</code>
-            </p>
-          </div>
         </div>
 
         <div className="relative z-10 flex items-center gap-6 text-xs text-slate-500 border-t border-slate-800/80 pt-6">
@@ -170,12 +109,15 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* O'ng qism: Login Forma va Xodimlar ro'yxati */}
-      <div className="flex items-center justify-center p-6 lg:p-12 bg-slate-900 overflow-y-auto max-h-screen">
+      {/* O'ng qism: Toza Login Forma (Avto-to'ldirishsiz) */}
+      <div className="flex items-center justify-center p-6 lg:p-12 bg-slate-900">
         <div className="w-full max-w-md space-y-6 bg-slate-900/80 p-8 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-xl">
           <div className="text-center space-y-2">
+            <div className="lg:hidden inline-flex w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-cyan-400 items-center justify-center font-bold text-slate-950 shadow-lg text-xl mb-2">
+              P
+            </div>
             <h3 className="text-2xl font-bold text-white tracking-tight">Tizimga kirish</h3>
-            <p className="text-xs text-slate-400">Admin yoki jamoa hisob ma&apos;lumotlarini kiriting</p>
+            <p className="text-xs text-slate-400">Admin yoki operator hisob ma&apos;lumotlarini kiriting</p>
           </div>
 
           {error && (
@@ -194,7 +136,7 @@ export default function LoginPage() {
                   required
                   value={loginInput}
                   onChange={(e) => setLoginInput(e.target.value)}
-                  placeholder="mirhamid_be yoki admin@parkly.uz"
+                  placeholder="mirhamid_be yoki admin"
                   className="w-full pl-11 pr-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
@@ -218,89 +160,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
             >
               {isLoading ? (
                 <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
               ) : (
                 <>
-                  <span>Kirish ({selectedUser ? selectedUser.roleLabel : 'Boshqaruv'})</span>
+                  <span>Kirish</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
-
-          {/* 1-Klikda Tezkor To'ldirish Ro'yxati */}
-          <div className="space-y-2.5 pt-4 border-t border-slate-800/80">
-            <p className="text-[11px] font-semibold text-slate-400 text-center uppercase tracking-wider">
-              👇 1-Klikda Xodimni Tanlang (Avto-to&apos;ldirish):
-            </p>
-
-            <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
-              {TEAM_ACCOUNTS.slice(0, 6).map((acc) => {
-                const isSelected = loginInput.toLowerCase().includes(acc.username);
-                return (
-                  <button
-                    key={acc.username}
-                    type="button"
-                    onClick={() => selectAccount(acc)}
-                    className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
-                      isSelected
-                        ? 'bg-emerald-500/15 border-emerald-500/50 text-white'
-                        : 'bg-slate-950/40 hover:bg-slate-800/60 border-slate-800 text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
-                          acc.role === 'SUPER_ADMIN'
-                            ? 'bg-emerald-500/20 text-emerald-400'
-                            : 'bg-cyan-500/20 text-cyan-400'
-                        }`}
-                      >
-                        {acc.name[0]}
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold leading-tight text-white">{acc.name}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">@{acc.username}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                          acc.role === 'SUPER_ADMIN'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                        }`}
-                      >
-                        {acc.role === 'SUPER_ADMIN' ? 'Super' : 'Admin'}
-                      </span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => selectAccount(TEAM_ACCOUNTS[6])}
-                className="py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-400 text-xs font-semibold border border-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" /> Test Super
-              </button>
-              <button
-                type="button"
-                onClick={() => selectAccount(TEAM_ACCOUNTS[7])}
-                className="py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-amber-400 text-xs font-semibold border border-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <User className="w-3.5 h-3.5" /> Test Operator
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
