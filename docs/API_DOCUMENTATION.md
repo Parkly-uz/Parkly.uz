@@ -160,3 +160,82 @@ Haydovchi uchun 1, 3 yoki 6 oylik obuna sotib olish yoki uzaytirish.
   "message": "3 oylik obuna faollashtirildi!"
 }
 ```
+
+
+---
+
+## 🚫 6. Qora Ro'yxat Boshqaruvi (Vehicle Blacklist API)
+
+### `GET /api/v1/blacklist`
+Qora ro'yxatdagi barcha transport vositalari ro'yxatini olish.
+* **Query parametrlari:** `search` (davlat raqami bo'yicha qidiruv), `is_active` (`true`/`false`)
+* **Javob (200 OK):**
+```json
+{
+  "total": 2,
+  "items": [
+    {
+      "id": "b1a2-...",
+      "plate_number": "01A777AA",
+      "category": "DAMAGE",
+      "reason": "Shlagbaum to'sig'iga urilib ketgan",
+      "penalty_amount": 750000.0,
+      "added_by": "mirhamid_be",
+      "is_active": true,
+      "created_at": "2026-10-25T11:20:00Z"
+    }
+  ]
+}
+```
+
+### `POST /api/v1/blacklist/add`
+Yangi transport vositasini qora ro'yxatga kiritish (faqat Super Admin va Admin huquqi).
+* **Request Body:**
+```json
+{
+  "plate_number": "01B999BB",
+  "category": "PAYMENT_EVASION",
+  "reason": "To'lov qilmasdan qochishga uringan",
+  "penalty_amount": 120000.0,
+  "notes": "ESP32-CAM orqali kadr fiksatsiya qilindi"
+}
+```
+* **Javob (201 Created):**
+```json
+{
+  "status": "SUCCESS",
+  "message": "01B999BB muvaffaqiyatli qora ro'yxatga kiritildi. Kirish bloklandi.",
+  "plate_number": "01B999BB"
+}
+```
+
+### `POST /api/v1/blacklist/verify`
+ANPR kamera o'qigan davlat raqamini qora ro'yxatda mavjudligini tezkor tekshirish.
+* **Request Body:**
+```json
+{
+  "plate_number": "01A777AA"
+}
+```
+* **Javob (200 OK — Bloklangan holat):**
+```json
+{
+  "status": "BLOCKED",
+  "action": "DENY_ENTRY",
+  "gate_command": "KEEP_CLOSED",
+  "display_message": "⛔ Tizimga kirish taqiqlangan! Administratorga murojaat qiling.",
+  "reason": "Shlagbaum to'sig'iga urilib ketgan",
+  "penalty_amount": 750000.0
+}
+```
+
+### `DELETE /api/v1/blacklist/{plate_number}`
+Qarz/zarar qoplangach, transport vositasini qora ro'yxatdan chiqarish (faqat Super Admin).
+* **Javob (200 OK):**
+```json
+{
+  "status": "SUCCESS",
+  "message": "01A777AA qora ro'yxatdan chiqarildi va kirishga ruxsat tiklandi.",
+  "unbanned_by": "dilshod_pm"
+}
+```
